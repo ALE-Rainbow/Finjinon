@@ -51,6 +51,7 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
     fileprivate var containerView = UIView()
     fileprivate var focusIndicatorView = UIView(frame: CGRect(x: 0, y: 0, width: 64, height: 64))
     fileprivate var flashButton = UIButton()
+    fileprivate var switchCameraButton = UIButton()
     fileprivate var pickerButton: UIButton?
     fileprivate var closeButton = UIButton()
     fileprivate let buttonMargin: CGFloat = 12
@@ -190,6 +191,15 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         containerView.addSubview(captureButton)
         captureButton.isEnabled = false
         captureButton.accessibilityLabel = "finjinon.captureButton".localized()
+
+        switchCameraButton.frame = CGRect(x: viewFrame.origin.x + buttonMargin, y: containerView.frame.height - cameraButtonHeight - 4, width: 30, height: 30)
+        let switchCameraIcon = UIImage(named: "SwitchCameraIcon", in: Bundle(for: PhotoCaptureViewController.self), compatibleWith: nil)
+        switchCameraButton.setImage(switchCameraIcon, for: .normal)
+        switchCameraButton.setTitle("", for: .normal)
+        switchCameraButton.addTarget(self, action: #selector(switchCameraButtonTapped(_:)), for: .touchUpInside)
+        switchCameraButton.titleLabel?.font = UIFont.preferredFont(forTextStyle: .footnote)
+        switchCameraButton.tintColor = UIColor.white
+        switchCameraButton.layer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
 
         closeButton.frame = CGRect(x: captureButton.frame.maxX, y: captureButton.frame.midY - 22, width: viewBounds.width - captureButton.frame.maxX, height: 44)
         closeButton.addTarget(self, action: #selector(doneButtonTapped(_:)), for: .touchUpInside)
@@ -365,6 +375,11 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
                 self.flashButton.setTitle("finjinon.auto".localized(), for: .normal)
             }
         }
+    }
+
+    
+    @objc func switchCameraButtonTapped(_: UIButton) {
+        captureManager.switchCameraPosition()
     }
 
     @objc func presentImagePickerTapped(_: AnyObject) {

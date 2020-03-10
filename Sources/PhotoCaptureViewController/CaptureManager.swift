@@ -42,6 +42,8 @@ class CaptureManager: NSObject {
         return modes
     }
 
+    var cameraPosition : AVCaptureDevice.Position = .back
+    
     private let session = AVCaptureSession()
     private let captureQueue = DispatchQueue(label: "no.finn.finjinon-captures", attributes: [])
     private var cameraDevice: AVCaptureDevice?
@@ -168,6 +170,17 @@ class CaptureManager: NSObject {
 
         return next
     }
+    
+    func switchCameraPosition() {
+        if self.cameraPosition == .back {
+            self.cameraPosition = .front
+        } else {
+            self.cameraPosition = .back
+        }
+        self.configure(){_ in
+            
+        }
+    }
 
     // Orientation change function required because we've locked the interface in portrait
     // and DeviceOrientation does not map 1:1 with AVCaptureVideoOrientation
@@ -194,7 +207,7 @@ private extension CaptureManager {
             newCameraSettings = AVCapturePhotoSettings(from: currentCameraSettings)
             newCameraSettings.flashMode = flashMode
         } else {
-            newCameraSettings = AVCapturePhotoSettings(format: [AVVideoCodecKey: AVVideoCodecJPEG, AVVideoCompressionPropertiesKey: [AVVideoQualityKey: 0.9]])
+            newCameraSettings = AVCapturePhotoSettings(format: [AVVideoCodecKey: AVVideoCodecType.jpeg, AVVideoCompressionPropertiesKey: [AVVideoQualityKey: 0.9]])
             newCameraSettings.flashMode = flashMode
         }
 
@@ -228,7 +241,7 @@ private extension CaptureManager {
         captureQueue.async { [weak self] in
             guard let self = self else { return }
 
-            self.cameraDevice = self.cameraDeviceWithPosition(.back)
+            self.cameraDevice = self.cameraDeviceWithPosition(self.cameraPosition)
             var error: NSError?
 
             do {
