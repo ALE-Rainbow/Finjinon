@@ -227,7 +227,9 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
             if self.captureManager.hasFlash {
                 self.view.addSubview(self.flashButton)
             }
-
+            // TODO: check that there are a front and a back camera
+            self.view.addSubview(self.switchCameraButton)
+            
             UIView.animate(withDuration: 0.2, animations: {
                 self.captureButton.isEnabled = true
                 self.previewView.alpha = 1.0
@@ -520,6 +522,7 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
     }
 
     fileprivate func updateWidgetsToOrientation() {
+        // TODO: rotate the switch camera icon
         var flashPosition = flashButton.frame.origin
         var pickerPosition: CGPoint = pickerButton?.frame.origin ?? .zero
         if orientation == .landscapeLeft || orientation == .landscapeRight {

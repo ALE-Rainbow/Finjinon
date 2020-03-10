@@ -245,6 +245,10 @@ private extension CaptureManager {
             var error: NSError?
 
             do {
+                if let input = self.session.inputs.first {
+                    self.session.removeInput(input)
+                }
+
                 let input = try AVCaptureDeviceInput(device: self.cameraDevice!)
                 if self.session.canAddInput(input) {
                     self.session.addInput(input)
