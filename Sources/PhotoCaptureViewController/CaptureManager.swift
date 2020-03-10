@@ -31,6 +31,8 @@ class CaptureManager: NSObject {
     var hasFlash: Bool {
         return cameraDevice?.hasFlash ?? false && cameraDevice?.isFlashAvailable ?? false
     }
+    
+    var hasFrontCamera : Bool = false
 
     var supportedFlashModes: [AVCaptureDevice.FlashMode] {
         var modes: [AVCaptureDevice.FlashMode] = []
@@ -311,11 +313,17 @@ private extension CaptureManager {
         }
 
         for device in availableCameraDevices {
+            if device.position == AVCaptureDevice.Position.front {
+                hasFrontCamera = true
+            }
+        }
+
+        for device in availableCameraDevices {
             if device.position == position {
                 return device
             }
         }
-
+        
         return AVCaptureDevice.default(for: AVMediaType.video)
     }
 

@@ -227,8 +227,9 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
             if self.captureManager.hasFlash {
                 self.view.addSubview(self.flashButton)
             }
-            // TODO: check that there are a front and a back camera
-            self.view.addSubview(self.switchCameraButton)
+            if self.captureManager.hasFrontCamera {
+                self.containerView.addSubview(self.switchCameraButton)
+            }
             
             UIView.animate(withDuration: 0.2, animations: {
                 self.captureButton.isEnabled = true
