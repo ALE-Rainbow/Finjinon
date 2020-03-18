@@ -135,7 +135,9 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         focusIndicatorView.alpha = 0.0
         previewView.addSubview(focusIndicatorView)
 
-        flashButton.frame = CGRect(x: viewFrame.origin.x + buttonMargin, y: viewFrame.origin.y + buttonMargin, width: 70, height: 38)
+        let buttonAlignOffset : CGFloat = 8
+        let flashButtonWidth : CGFloat = 70
+        flashButton.frame = CGRect(x: viewFrame.width - flashButtonWidth - buttonMargin, y: viewFrame.origin.y + buttonMargin + buttonAlignOffset, width: flashButtonWidth, height: 38)
 
         let icon = UIImage(named: "LightningIcon", in: Bundle(for: PhotoCaptureViewController.self), compatibleWith: nil)
         flashButton.setImage(icon, for: .normal)
@@ -205,7 +207,7 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         switchCameraButton.layer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
 
         let closeButtonSize : CGFloat = 48
-        closeButton.frame = CGRect(x: viewFrame.width - closeButtonSize - buttonMargin, y: viewFrame.origin.y + buttonMargin, width: closeButtonSize, height: closeButtonSize)
+        closeButton.frame = CGRect(x: viewFrame.origin.x + buttonMargin, y: viewFrame.origin.y + buttonMargin, width: closeButtonSize, height: closeButtonSize)
         let closeIcon = UIImage(named: "CloseIcon", in: Bundle(for: PhotoCaptureViewController.self), compatibleWith: nil)
         closeButton.setImage(closeIcon, for: .normal)
         closeButton.addTarget(self, action: #selector(doneButtonTapped(_:)), for: .touchUpInside)
