@@ -135,7 +135,8 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         focusIndicatorView.alpha = 0.0
         previewView.addSubview(focusIndicatorView)
 
-        let buttonAlignOffset : CGFloat = 8
+        let buttonAlignOffset : CGFloat = 4
+        
         let flashButtonWidth : CGFloat = 70
         flashButton.frame = CGRect(x: viewFrame.width - flashButtonWidth - buttonMargin, y: viewFrame.origin.y + buttonMargin + buttonAlignOffset, width: flashButtonWidth, height: 38)
 
@@ -258,7 +259,8 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
             }
         } else {
             let pickerButtonWidth: CGFloat = 114
-            let buttonRect = CGRect(x: viewFrame.width - pickerButtonWidth - buttonMargin, y: viewFrame.origin.y + buttonMargin, width: pickerButtonWidth, height: 38)
+            let pickerButtonHeight : CGFloat = 38
+            let buttonRect = CGRect(x: viewFrame.origin.x + buttonMargin, y: captureButton.frame.midY - pickerButtonHeight/2, width: pickerButtonWidth, height: pickerButtonHeight)
 
             if pickerButton == nil {
                 pickerButton = UIButton(frame: buttonRect)
@@ -270,7 +272,7 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
                 pickerButton!.autoresizingMask = [.flexibleTopMargin]
                 pickerButton!.layer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
                 roundifyButton(pickerButton!)
-                view.addSubview(pickerButton!)
+                containerView.addSubview(pickerButton!)
             } else {
                 pickerButton!.frame = buttonRect
             }
