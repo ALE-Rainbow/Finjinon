@@ -194,7 +194,7 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         captureButton.isEnabled = false
         captureButton.accessibilityLabel = "finjinon.captureButton".localized()
 
-        let switchCameraButtonSize = 50
+        let switchCameraButtonSize : CGFloat = 50
         switchCameraButton.frame = CGRect(x: viewFrame.width - switchCameraButtonSize - buttonMargin, y: captureButton.frame.midY - switchCameraButtonSize/2, width: switchCameraButtonSize, height: switchCameraButtonSize)
         let switchCameraIcon = UIImage(named: "SwitchCameraIcon", in: Bundle(for: PhotoCaptureViewController.self), compatibleWith: nil)
         switchCameraButton.setImage(switchCameraIcon, for: .normal)
