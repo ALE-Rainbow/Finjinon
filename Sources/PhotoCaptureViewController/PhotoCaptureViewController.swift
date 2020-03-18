@@ -43,6 +43,8 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
     /// Use constraints to position elements dynamically, as the view will be rotated and sized with the device.
     open var imagePickerWaitingForImageDataView: UIView?
 
+    open var enableLowLightWarning = false
+    
     fileprivate let storage = PhotoStorage()
     fileprivate let captureManager = CaptureManager()
     fileprivate var previewView = UIView()
@@ -192,7 +194,8 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         captureButton.isEnabled = false
         captureButton.accessibilityLabel = "finjinon.captureButton".localized()
 
-        switchCameraButton.frame = CGRect(x: captureButton.frame.midY/2, y: captureButton.frame.midY - 25, width: 50, height: 50)
+        let switchCameraButtonSize = 50
+        switchCameraButton.frame = CGRect(x: viewFrame.width - switchCameraButtonSize - buttonMargin, y: captureButton.frame.midY - switchCameraButtonSize/2, width: switchCameraButtonSize, height: switchCameraButtonSize)
         let switchCameraIcon = UIImage(named: "SwitchCameraIcon", in: Bundle(for: PhotoCaptureViewController.self), compatibleWith: nil)
         switchCameraButton.setImage(switchCameraIcon, for: .normal)
         switchCameraButton.setTitle("", for: .normal)
@@ -202,7 +205,7 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         switchCameraButton.layer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
 
         let closeButtonSize : CGFloat = 48
-        closeButton.frame = CGRect(x: viewFrame.width - closeButtonSize - buttonMargin, y: captureButton.frame.midY - 22, width: closeButtonSize, height: closeButtonSize)
+        closeButton.frame = CGRect(x: viewFrame.width - closeButtonSize - buttonMargin, y: viewFrame.origin.y + buttonMargin, width: closeButtonSize, height: closeButtonSize)
         let closeIcon = UIImage(named: "CloseIcon", in: Bundle(for: PhotoCaptureViewController.self), compatibleWith: nil)
         closeButton.setImage(closeIcon, for: .normal)
         closeButton.addTarget(self, action: #selector(doneButtonTapped(_:)), for: .touchUpInside)
@@ -211,12 +214,14 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         closeButton.layer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
         self.view.addSubview(closeButton)
 
-        view.addSubview(lowLightView)
-        NSLayoutConstraint.activate([
-            lowLightView.bottomAnchor.constraint(equalTo: collectionView.topAnchor, constant: -16),
-            lowLightView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            lowLightView.widthAnchor.constraint(lessThanOrEqualTo: view.widthAnchor, multiplier: 0.8)
-        ])
+        if enableLowLightWarning {
+            view.addSubview(lowLightView)
+            NSLayoutConstraint.activate([
+                lowLightView.bottomAnchor.constraint(equalTo: collectionView.topAnchor, constant: -16),
+                lowLightView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+                lowLightView.widthAnchor.constraint(lessThanOrEqualTo: view.widthAnchor, multiplier: 0.8)
+            ])
+        }
 
         updateImagePickerButton()
 
@@ -599,6 +604,9 @@ extension PhotoCaptureViewController: CaptureManagerDelegate {
     }
 
     func captureManager(_ manager: CaptureManager, didDetectLightingCondition lightingCondition: LightingCondition) {
+        if !enableLowLightWarning {
+            return
+        }
         if lightingCondition == .low {
             lowLightView.text = "finjinon.lowLightMessage".localized()
             lowLightView.isHidden = false
