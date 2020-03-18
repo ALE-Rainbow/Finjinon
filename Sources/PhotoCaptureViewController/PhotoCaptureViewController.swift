@@ -201,9 +201,11 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         switchCameraButton.tintColor = UIColor.white
         switchCameraButton.layer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
 
-        closeButton.frame = CGRect(x: captureButton.frame.maxX, y: captureButton.frame.midY - 22, width: viewBounds.width - captureButton.frame.maxX, height: 44)
+        closeButton.frame = CGRect(x: captureButton.frame.maxX, y: captureButton.frame.midY - 22, width: 48, height: 48)
+        let closeIcon = UIImage(named: "CloseIcon", in: Bundle(for: PhotoCaptureViewController.self), compatibleWith: nil)
+        closeButton.setImage(closeIcon, for: .normal)
         closeButton.addTarget(self, action: #selector(doneButtonTapped(_:)), for: .touchUpInside)
-        closeButton.setTitle("finjinon.done".localized(), for: .normal)
+        closeButton.setTitle("", for: .normal)
         closeButton.tintColor = UIColor.white
         closeButton.layer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
         containerView.addSubview(closeButton)
