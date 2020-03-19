@@ -70,8 +70,8 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
     private var viewBounds = CGRect.zero
     private var subviewSetupDone = false
     
-    private static let buttonAlignOffset : CGFloat = 4
-    private static let flashButtonWidth : CGFloat = 70
+    private let buttonAlignOffset : CGFloat = 4
+    private let flashButtonWidth : CGFloat = 70
 
     deinit {
         captureManager.stop(nil)
