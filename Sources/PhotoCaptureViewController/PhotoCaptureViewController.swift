@@ -551,7 +551,7 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
             self.flashButton.rotateToCurrentDeviceOrientation()
             self.flashButton.frame.origin = flashPosition
             self.closeButton.rotateToCurrentDeviceOrientation()
-            self.switchCameraButton?.rotateToCurrentDeviceOrientation()
+            self.switchCameraButton.rotateToCurrentDeviceOrientation()
 
             for cell in self.collectionView.visibleCells {
                 cell.contentView.rotateToCurrentDeviceOrientation()
