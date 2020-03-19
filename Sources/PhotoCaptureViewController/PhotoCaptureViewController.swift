@@ -69,6 +69,9 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
     private var viewFrame = CGRect.zero
     private var viewBounds = CGRect.zero
     private var subviewSetupDone = false
+    
+    private static let buttonAlignOffset : CGFloat = 4
+    private static let flashButtonWidth : CGFloat = 70
 
     deinit {
         captureManager.stop(nil)
@@ -135,9 +138,6 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         focusIndicatorView.alpha = 0.0
         previewView.addSubview(focusIndicatorView)
 
-        let buttonAlignOffset : CGFloat = 4
-        
-        let flashButtonWidth : CGFloat = 70
         flashButton.frame = CGRect(x: viewFrame.width - flashButtonWidth - buttonMargin, y: viewFrame.origin.y + buttonMargin + buttonAlignOffset, width: flashButtonWidth, height: 38)
 
         let icon = UIImage(named: "LightningIcon", in: Bundle(for: PhotoCaptureViewController.self), compatibleWith: nil)
@@ -543,7 +543,7 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
             pickerPosition = pickerButton != nil ? CGPoint(x: viewFrame.origin.x + viewBounds.width - (pickerButton!.bounds.size.width / 2 - buttonMargin), y: viewFrame.origin.y + buttonMargin) : .zero
         } else if orientation == .portrait || orientation == .portraitUpsideDown {
             pickerPosition = pickerButton != nil ? CGPoint(x: viewFrame.origin.x + viewBounds.width - (pickerButton!.bounds.size.width + buttonMargin), y: viewFrame.origin.y + buttonMargin) : .zero
-            flashPosition = CGPoint(x: viewFrame.origin.x + buttonMargin, y: viewFrame.origin.y + buttonMargin)
+            flashPosition = CGPoint(x: viewFrame.width - flashButtonWidth - buttonMargin, y: viewFrame.origin.y + buttonMargin + buttonAlignOffset)
         }
         let animations = {
             self.pickerButton?.rotateToCurrentDeviceOrientation()
@@ -551,6 +551,7 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
             self.flashButton.rotateToCurrentDeviceOrientation()
             self.flashButton.frame.origin = flashPosition
             self.closeButton.rotateToCurrentDeviceOrientation()
+            self.switchCameraButton?.rotateToCurrentDeviceOrientation()
 
             for cell in self.collectionView.visibleCells {
                 cell.contentView.rotateToCurrentDeviceOrientation()
