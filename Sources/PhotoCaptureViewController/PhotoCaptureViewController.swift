@@ -72,6 +72,7 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
     
     private let buttonAlignOffset : CGFloat = 4
     private let flashButtonWidth : CGFloat = 70
+    private let flashButtonHeight : CGFloat = 38
 
     deinit {
         captureManager.stop(nil)
@@ -138,7 +139,7 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         focusIndicatorView.alpha = 0.0
         previewView.addSubview(focusIndicatorView)
 
-        flashButton.frame = CGRect(x: viewFrame.width - flashButtonWidth - buttonMargin, y: viewFrame.origin.y + buttonMargin + buttonAlignOffset, width: flashButtonWidth, height: 38)
+        flashButton.frame = CGRect(x: viewFrame.width - flashButtonWidth - buttonMargin, y: viewFrame.origin.y + buttonMargin + buttonAlignOffset, width: flashButtonWidth, height: flashButtonHeight)
 
         let icon = UIImage(named: "LightningIcon", in: Bundle(for: PhotoCaptureViewController.self), compatibleWith: nil)
         flashButton.setImage(icon, for: .normal)
@@ -538,7 +539,7 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         var flashPosition = flashButton.frame.origin
         var pickerPosition: CGPoint = pickerButton?.frame.origin ?? .zero
         if orientation == .landscapeLeft || orientation == .landscapeRight {
-            flashPosition = CGPoint(x: viewFrame.width - flashButtonWidth /*- (buttonMargin / 3)*/, y: viewFrame.origin.y + buttonMargin)
+            flashPosition = CGPoint(x: viewFrame.width - flashButtonWidth + flashButtonHeight/2, y: viewFrame.origin.y + buttonMargin)
             pickerPosition = pickerButton != nil ? CGPoint(x: viewFrame.origin.x + viewBounds.width - (pickerButton!.bounds.size.width / 2 - buttonMargin), y: viewFrame.origin.y + buttonMargin) : .zero
         } else if orientation == .portrait || orientation == .portraitUpsideDown {
             pickerPosition = pickerButton != nil ? CGPoint(x: viewFrame.origin.x + viewBounds.width - (pickerButton!.bounds.size.width + buttonMargin), y: viewFrame.origin.y + buttonMargin) : .zero
