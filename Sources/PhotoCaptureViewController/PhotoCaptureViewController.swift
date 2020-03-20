@@ -538,7 +538,7 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         var flashPosition = flashButton.frame.origin
         var pickerPosition: CGPoint = pickerButton?.frame.origin ?? .zero
         if orientation == .landscapeLeft || orientation == .landscapeRight {
-            flashPosition = CGPoint(x: viewFrame.width - flashButtonWidth - (buttonMargin / 3), y: viewFrame.origin.y /*+ buttonMargin*/)
+            flashPosition = CGPoint(x: viewFrame.width /*- flashButtonWidth*/ - (buttonMargin / 3), y: viewFrame.origin.y + buttonMargin)
             pickerPosition = pickerButton != nil ? CGPoint(x: viewFrame.origin.x + viewBounds.width - (pickerButton!.bounds.size.width / 2 - buttonMargin), y: viewFrame.origin.y + buttonMargin) : .zero
         } else if orientation == .portrait || orientation == .portraitUpsideDown {
             pickerPosition = pickerButton != nil ? CGPoint(x: viewFrame.origin.x + viewBounds.width - (pickerButton!.bounds.size.width + buttonMargin), y: viewFrame.origin.y + buttonMargin) : .zero
