@@ -115,6 +115,12 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         scrollToLastAddedAssetAnimated(false)
     }
 
+    override open func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        // Allows the preview layer to fill the whole screen
+        self.captureManager.previewLayer.frame = self.view.layer.bounds
+    }
+    
     func setupSubviews() {
         // Subviews need to be added and framed during viewDidAppear for the iPhone X's safeAreas to be known.
         if subviewSetupDone { return }
@@ -165,7 +171,8 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
             collectionViewHeight = containerHeight - cameraButtonHeight
         }
         containerView.frame = containerFrame
-        containerView.backgroundColor = UIColor(white: 0, alpha: 0.4)
+        containerView.backgroundColor = UIColor(white: 0, alpha: 0.2)
+        containerView.alpha = 0.75
         view.addSubview(containerView)
         collectionView.frame = CGRect(x: 0, y: 0, width: containerView.bounds.width, height: collectionViewHeight)
         let layout = PhotoCollectionViewLayout()
