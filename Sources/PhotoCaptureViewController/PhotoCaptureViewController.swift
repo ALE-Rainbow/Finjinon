@@ -71,8 +71,8 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
     private var subviewSetupDone = false
     
     private let buttonAlignOffset : CGFloat = 4
-    private let flashButtonWidth : CGFloat = 70
-    private let flashButtonHeight : CGFloat = 38
+    private let flashButtonWidth : CGFloat = 50
+    private let flashButtonHeight : CGFloat = 50
 
     deinit {
         captureManager.stop(nil)
@@ -90,6 +90,8 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
             case .landscapeLeft, .landscapeRight, .portrait, .portraitUpsideDown:
                 self.orientation = UIDevice.current.orientation
                 self.updateWidgetsToOrientation()
+            default:
+                ()
             }
         }
     }
@@ -145,17 +147,6 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         focusIndicatorView.alpha = 0.0
         previewView.addSubview(focusIndicatorView)
 
-        flashButton.frame = CGRect(x: viewFrame.width - flashButtonWidth - buttonMargin, y: viewFrame.origin.y + buttonMargin + buttonAlignOffset, width: flashButtonWidth, height: flashButtonHeight)
-
-        let icon = UIImage(named: "LightningIcon", in: Bundle(for: PhotoCaptureViewController.self), compatibleWith: nil)
-        flashButton.setImage(icon, for: .normal)
-        flashButton.setTitle("finjinon.auto".localized(), for: .normal)
-        flashButton.addTarget(self, action: #selector(flashButtonTapped(_:)), for: .touchUpInside)
-        flashButton.titleLabel?.font = UIFont.preferredFont(forTextStyle: .footnote)
-        flashButton.tintColor = UIColor.white
-        flashButton.layer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
-        roundifyButton(flashButton, inset: 14)
-
         let tapper = UITapGestureRecognizer(target: self, action: #selector(focusTapGestureRecognized(_:)))
         previewView.addGestureRecognizer(tapper)
 
@@ -205,6 +196,13 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         captureButton.isEnabled = false
         captureButton.accessibilityLabel = "finjinon.captureButton".localized()
 
+        flashButton.frame = CGRect(x: buttonMargin, y: captureButton.frame.midY - flashButtonHeight/2, width: flashButtonWidth, height: flashButtonHeight)
+        let icon = UIImage(named: "flashAutoIcon", in: Bundle(for: PhotoCaptureViewController.self), compatibleWith: nil)
+        flashButton.setImage(icon, for: .normal)
+        flashButton.addTarget(self, action: #selector(flashButtonTapped(_:)), for: .touchUpInside)
+        flashButton.tintColor = UIColor.white
+        flashButton.layer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+        
         let switchCameraButtonSize : CGFloat = 50
         switchCameraButton.frame = CGRect(x: viewFrame.width - switchCameraButtonSize - buttonMargin, y: captureButton.frame.midY - switchCameraButtonSize/2, width: switchCameraButtonSize, height: switchCameraButtonSize)
         let switchCameraIcon = UIImage(named: "SwitchCameraIcon", in: Bundle(for: PhotoCaptureViewController.self), compatibleWith: nil)
@@ -244,7 +242,7 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
             }
 
             if self.captureManager.hasFlash {
-                self.view.addSubview(self.flashButton)
+                self.containerView.addSubview(self.flashButton)
             }
             if self.captureManager.hasFrontCamera {
                 self.containerView.addSubview(self.switchCameraButton)
@@ -388,14 +386,20 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
 
     @objc func flashButtonTapped(_: UIButton) {
         let mode = captureManager.nextAvailableFlashMode() ?? .off
+        var icon : UIImage?
         captureManager.changeFlashMode(mode) {
             switch mode {
             case .off:
-                self.flashButton.setTitle("finjinon.off".localized(), for: .normal)
+                icon = UIImage(named: "flashOffIcon", in: Bundle(for: PhotoCaptureViewController.self), compatibleWith: nil)
             case .on:
-                self.flashButton.setTitle("finjinon.on".localized(), for: .normal)
+                icon = UIImage(named: "flashOnIcon", in: Bundle(for: PhotoCaptureViewController.self), compatibleWith: nil)
             case .auto:
-                self.flashButton.setTitle("finjinon.auto".localized(), for: .normal)
+                icon = UIImage(named: "flashAutoIcon", in: Bundle(for: PhotoCaptureViewController.self), compatibleWith: nil)
+            default:
+                icon = nil
+            }
+            if let icon = icon {
+                self.flashButton.setImage(icon, for: .normal)
             }
         }
     }
@@ -543,20 +547,16 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
     }
 
     fileprivate func updateWidgetsToOrientation() {
-        var flashPosition = flashButton.frame.origin
         var pickerPosition: CGPoint = pickerButton?.frame.origin ?? .zero
         if orientation == .landscapeLeft || orientation == .landscapeRight {
-            flashPosition = CGPoint(x: viewFrame.width - flashButtonWidth + flashButtonHeight/2, y: viewFrame.origin.y + buttonMargin)
             pickerPosition = pickerButton != nil ? CGPoint(x: viewFrame.origin.x + viewBounds.width - (pickerButton!.bounds.size.width / 2 - buttonMargin), y: viewFrame.origin.y + buttonMargin) : .zero
         } else if orientation == .portrait || orientation == .portraitUpsideDown {
             pickerPosition = pickerButton != nil ? CGPoint(x: viewFrame.origin.x + viewBounds.width - (pickerButton!.bounds.size.width + buttonMargin), y: viewFrame.origin.y + buttonMargin) : .zero
-            flashPosition = CGPoint(x: viewFrame.width - flashButtonWidth - buttonMargin, y: viewFrame.origin.y + buttonMargin + buttonAlignOffset)
         }
         let animations = {
             self.pickerButton?.rotateToCurrentDeviceOrientation()
             self.pickerButton?.frame.origin = pickerPosition
             self.flashButton.rotateToCurrentDeviceOrientation()
-            self.flashButton.frame.origin = flashPosition
             self.closeButton.rotateToCurrentDeviceOrientation()
             self.switchCameraButton.rotateToCurrentDeviceOrientation()
 
