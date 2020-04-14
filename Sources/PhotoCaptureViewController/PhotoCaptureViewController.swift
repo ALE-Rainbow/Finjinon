@@ -71,8 +71,8 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
     private var subviewSetupDone = false
     
     private let buttonAlignOffset : CGFloat = 4
-    private let flashButtonWidth : CGFloat = 50
-    private let flashButtonHeight : CGFloat = 50
+    private let flashButtonWidth : CGFloat = 30
+    private let flashButtonHeight : CGFloat = 30
 
     deinit {
         captureManager.stop(nil)
@@ -189,7 +189,7 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         collectionView.dataSource = self
         collectionView.delegate = self
 
-        captureButton.frame = CGRect(x: (containerView.frame.width / 2) - cameraButtonHeight / 2, y: containerView.frame.height - cameraButtonHeight - 4, width: cameraButtonHeight, height: cameraButtonHeight)
+        captureButton.frame = CGRect(x: (containerView.frame.width / 2) - cameraButtonHeight / 2, y: containerView.frame.height - cameraButtonHeight - 12, width: cameraButtonHeight, height: cameraButtonHeight)
         captureButton.layer.cornerRadius = cameraButtonHeight / 2
         captureButton.addTarget(self, action: #selector(capturePhotoTapped(_:)), for: .touchUpInside)
         containerView.addSubview(captureButton)
@@ -203,7 +203,7 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         flashButton.tintColor = UIColor.white
         flashButton.layer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
         
-        let switchCameraButtonSize : CGFloat = 50
+        let switchCameraButtonSize : CGFloat = 30
         switchCameraButton.frame = CGRect(x: viewFrame.width - switchCameraButtonSize - buttonMargin, y: captureButton.frame.midY - switchCameraButtonSize/2, width: switchCameraButtonSize, height: switchCameraButtonSize)
         let switchCameraIcon = UIImage(named: "SwitchCameraIcon", in: Bundle(for: PhotoCaptureViewController.self), compatibleWith: nil)
         switchCameraButton.setImage(switchCameraIcon, for: .normal)
