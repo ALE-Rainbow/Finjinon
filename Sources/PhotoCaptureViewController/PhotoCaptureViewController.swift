@@ -94,6 +94,12 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
                 ()
             }
         }
+        
+        NotificationCenter.default.addObserver(forName: NSNotification.Name.AVCaptureSessionWasInterrupted, object: nil, queue: nil) { (_) -> Void in
+            NSLog("AVCaptureSessionWasInterrupted")
+            self.captureManager.stop(nil)
+            self.dismiss(animated: true, completion: nil)
+        }
     }
 
     open override func viewDidAppear(_ animated: Bool) {
@@ -117,6 +123,11 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         scrollToLastAddedAssetAnimated(false)
     }
 
+    open override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        captureManager.stop(nil)
+    }
+    
     override open func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         // Allows the preview layer to fill the whole screen
