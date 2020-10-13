@@ -243,9 +243,13 @@ private extension CaptureManager {
             self.cameraDevice = self.cameraDeviceWithPosition(self.cameraPosition)
             var error: NSError?
             
+            #if !targetEnvironment(simulator)
             if !self.hasFlash || !self.cameraOutput.supportedFlashModes.contains(.auto) || !self.cameraOutput.supportedFlashModes.contains(.on) {
                  self.changeFlashMode(.off) {}
             }
+            #else
+            self.changeFlashMode(.off) {}
+            #endif
             
             do {
                 if let input = self.session.inputs.first {
