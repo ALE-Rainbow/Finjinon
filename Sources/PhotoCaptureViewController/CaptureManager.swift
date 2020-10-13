@@ -37,9 +37,11 @@ class CaptureManager: NSObject {
     var supportedFlashModes: [AVCaptureDevice.FlashMode] {
         var modes: [AVCaptureDevice.FlashMode] = []
         for mode in [AVCaptureDevice.FlashMode.off, AVCaptureDevice.FlashMode.auto, AVCaptureDevice.FlashMode.on] {
+            #if !targetEnvironment(simulator)
             if cameraOutput.supportedFlashModes.contains(mode) {
                 modes.append(mode)
             }
+            #endif
         }
         return modes
     }
