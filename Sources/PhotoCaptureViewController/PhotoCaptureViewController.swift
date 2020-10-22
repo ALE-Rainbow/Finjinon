@@ -125,7 +125,6 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
 
     open override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
-        captureManager.stop(nil)
     }
     
     override open func viewDidLayoutSubviews() {
@@ -514,6 +513,7 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
     }
 
     @objc func doneButtonTapped(_: UIButton) {
+        captureManager.stop(nil)
         delegate?.photoCaptureViewControllerDidFinish(self)
 
         dismiss(animated: true, completion: nil)
