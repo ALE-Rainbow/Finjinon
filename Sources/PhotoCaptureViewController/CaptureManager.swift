@@ -115,6 +115,17 @@ class CaptureManager: NSObject {
             completion?()
         }
     }
+    
+    func start(_ completion: (() -> Void)?) {
+        captureQueue.async { [weak self] in
+            guard let self = self else { return }
+
+            if !self.session.isRunning {
+                self.session.startRunning()
+            }
+            completion?()
+        }
+    }
 
     @available(*, deprecated, message: "Conform to the CaptureManagerDelegate and handle it in captureManager(_ manager: CaptureManager, didCaptureImage data: Data?, withMetadata metadata: NSDictionary?)")
     func captureImage(_ completion: @escaping (Data, NSDictionary) -> Void) {
