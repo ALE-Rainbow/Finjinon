@@ -25,6 +25,8 @@ class CaptureManager: NSObject {
 
     let previewLayer: AVCaptureVideoPreviewLayer
     let viewfinderMode: CaptureManagerViewfinderMode
+    
+    let shouldAutorotate = UIDevice.current.userInterfaceIdiom == .pad
 
     var flashMode: AVCaptureDevice.FlashMode = .auto
 
@@ -138,7 +140,9 @@ class CaptureManager: NSObject {
             guard let self = self else { return }
             guard let connection = self.cameraOutput.connection(with: .video) else { return }
 
-            connection.videoOrientation = self.orientation
+            if !self.shouldAutorotate {
+                connection.videoOrientation = self.orientation
+            }
             self.cameraSettings = self.createCapturePhotoSettingsObject()
 
             guard let cameraSettings = self.cameraSettings else { return }
@@ -195,6 +199,9 @@ class CaptureManager: NSObject {
     // Orientation change function required because we've locked the interface in portrait
     // and DeviceOrientation does not map 1:1 with AVCaptureVideoOrientation
     @objc func changedOrientationNotification(_: Notification?) {
+        if shouldAutorotate {
+            return
+        }
         let currentDeviceOrientation = UIDevice.current.orientation
         switch currentDeviceOrientation {
         case .faceDown, .faceUp, .unknown:

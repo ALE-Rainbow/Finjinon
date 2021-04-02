@@ -123,6 +123,13 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         scrollToLastAddedAssetAnimated(false)
         
         captureManager.start(nil)
+        
+        if shouldAutorotate {
+            DispatchQueue.main.async {
+                self.updateVideoOrientation()
+            }
+        }
+        
     }
 
     open override func viewDidDisappear(_ animated: Bool) {
@@ -164,7 +171,8 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         previewView.addGestureRecognizer(tapper)
 
         var collectionViewHeight: CGFloat = min(viewFrame.size.height / 6, 120)
-        let collectionViewBottomMargin: CGFloat = 70
+        let window = UIApplication.shared.keyWindow
+        let collectionViewBottomMargin: CGFloat = 70 + (window?.safeAreaInsets.bottom ?? 0)
         let cameraButtonHeight: CGFloat = 66
 
         var containerFrame = CGRect(x: viewFrame.origin.x, y: viewFrame.origin.y + viewBounds.height - collectionViewBottomMargin - collectionViewHeight, width: viewBounds.width, height: collectionViewBottomMargin + collectionViewHeight)
@@ -198,6 +206,19 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         collectionView.backgroundColor = UIColor.clear
         collectionView.alwaysBounceHorizontal = true
         containerView.addSubview(collectionView)
+        
+        collectionView.translatesAutoresizingMaskIntoConstraints = false
+        collectionView.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 0).isActive = true
+        collectionView.leftAnchor.constraint(equalTo: containerView.leftAnchor, constant: 0).isActive = true
+        collectionView.rightAnchor.constraint(equalTo: containerView.rightAnchor, constant: 0).isActive = true
+        collectionView.heightAnchor.constraint(equalToConstant: collectionViewHeight).isActive = true
+        
+        containerView.translatesAutoresizingMaskIntoConstraints = false
+        containerView.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: 0).isActive = true
+        containerView.leftAnchor.constraint(equalTo: view.leftAnchor, constant: 0).isActive = true
+        containerView.rightAnchor.constraint(equalTo: view.rightAnchor, constant: 0).isActive = true
+        containerView.heightAnchor.constraint(equalToConstant: collectionViewBottomMargin + collectionViewHeight).isActive = true
+
         collectionView.register(PhotoCollectionViewCell.self, forCellWithReuseIdentifier: "PhotoCell")
         collectionView.dataSource = self
         collectionView.delegate = self
@@ -206,6 +227,13 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         captureButton.layer.cornerRadius = cameraButtonHeight / 2
         captureButton.addTarget(self, action: #selector(capturePhotoTapped(_:)), for: .touchUpInside)
         containerView.addSubview(captureButton)
+        
+        captureButton.translatesAutoresizingMaskIntoConstraints = false
+        captureButton.topAnchor.constraint(equalTo: collectionView.bottomAnchor, constant: 0).isActive = true
+        captureButton.centerXAnchor.constraint(equalTo: containerView.centerXAnchor).isActive = true
+        captureButton.widthAnchor.constraint(equalToConstant: cameraButtonHeight).isActive = true
+        captureButton.heightAnchor.constraint(equalToConstant: cameraButtonHeight).isActive = true
+        
         captureButton.isEnabled = false
         captureButton.accessibilityLabel = "finjinon.captureButton".localized()
 
@@ -256,9 +284,19 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
 
             if self.captureManager.hasFlash {
                 self.containerView.addSubview(self.flashButton)
+                self.flashButton.translatesAutoresizingMaskIntoConstraints = false
+                self.flashButton.leftAnchor.constraint(equalTo: self.containerView.leftAnchor, constant: self.buttonMargin).isActive = true
+                self.flashButton.centerYAnchor.constraint(equalTo: self.captureButton.centerYAnchor).isActive = true
+                self.flashButton.widthAnchor.constraint(equalToConstant: self.flashButtonWidth).isActive = true
+                self.flashButton.heightAnchor.constraint(equalToConstant: self.flashButtonHeight).isActive = true
             }
             if self.captureManager.hasFrontCamera {
                 self.containerView.addSubview(self.switchCameraButton)
+                self.switchCameraButton.translatesAutoresizingMaskIntoConstraints = false
+                self.switchCameraButton.rightAnchor.constraint(equalTo: self.containerView.rightAnchor, constant: -switchCameraButtonSize).isActive = true
+                self.switchCameraButton.centerYAnchor.constraint(equalTo: self.captureButton.centerYAnchor).isActive = true
+                self.switchCameraButton.widthAnchor.constraint(equalToConstant: switchCameraButtonSize).isActive = true
+                self.switchCameraButton.heightAnchor.constraint(equalToConstant: switchCameraButtonSize).isActive = true
             }
             
             UIView.animate(withDuration: 0.2, animations: {
@@ -308,11 +346,15 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
     }
 
     open override var shouldAutorotate: Bool {
-        return false
+        return UIDevice.current.userInterfaceIdiom == .pad
     }
 
     open override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
-        return UIInterfaceOrientationMask.portrait
+        if shouldAutorotate {
+            return .all
+        } else {
+            return .portrait
+        }
     }
 
     // MARK: - API
@@ -453,7 +495,9 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
                     self.view.addConstraint(NSLayoutConstraint(item: waitView, attribute: .height, relatedBy: .equal, toItem: self.view, attribute: .height, multiplier: 1, constant: 0))
                     self.view.addConstraint(NSLayoutConstraint(item: waitView, attribute: .width, relatedBy: .equal, toItem: self.view, attribute: .width, multiplier: 1, constant: 0))
                 }
-                waitView.rotateToCurrentDeviceOrientation()
+                if !self.shouldAutorotate {
+                    waitView.rotateToCurrentDeviceOrientation()
+                }
             }
 
             let resolver = AssetResolver()
@@ -544,6 +588,47 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         return delegate?.photoCaptureViewController(self, canMoveItemAtIndexPath: indexPath) ?? true
     }
 
+    // MARK: - Video preview rotation
+        
+    func updateVideoOrientation() {
+        let previewLayer = captureManager.previewLayer
+        guard let connection = previewLayer.connection else {
+            NSLog("previewLayer.connection is nil")
+            return
+        }
+        guard connection.isVideoOrientationSupported else {
+            NSLog("isVideoOrientationSupported is false")
+            return
+        }
+        let statusBarOrientation : UIInterfaceOrientation?
+        if #available(iOS 13.0, *) {
+            if let windowScene = UIApplication.shared.windows.first?.windowScene {
+                statusBarOrientation = windowScene.interfaceOrientation
+            } else {
+                statusBarOrientation = nil
+            }
+        } else {
+            // Fallback on earlier versions
+            statusBarOrientation = UIApplication.shared.statusBarOrientation
+        }
+        let videoOrientation: AVCaptureVideoOrientation = statusBarOrientation?.videoOrientation ?? .portrait
+        previewLayer.frame = view.layer.bounds
+        previewLayer.connection?.videoOrientation = videoOrientation
+        previewLayer.removeAllAnimations()
+    }
+    
+    open override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
+        super.viewWillTransition(to: size, with: coordinator)
+        
+        if shouldAutorotate {
+            coordinator.animate(alongsideTransition: nil, completion: { [weak self] (context) in
+                DispatchQueue.main.async(execute: {
+                    self?.updateVideoOrientation()
+                })
+            })
+        }
+    }
+        
     // MARK: - Private methods
 
     fileprivate func roundifyButton(_ button: UIButton, inset: CGFloat = 16) {
@@ -560,6 +645,9 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
     }
 
     fileprivate func updateWidgetsToOrientation() {
+        if shouldAutorotate {
+            return
+        }
         var pickerPosition: CGPoint = pickerButton?.frame.origin ?? .zero
         if orientation == .landscapeLeft || orientation == .landscapeRight {
             pickerPosition = pickerButton != nil ? CGPoint(x: viewFrame.origin.x + viewBounds.width - (pickerButton!.bounds.size.width / 2 - buttonMargin), y: viewFrame.origin.y + buttonMargin) : .zero
@@ -593,8 +681,10 @@ extension PhotoCaptureViewController: UICollectionViewDataSource, PhotoCollectio
         } else {
             cell = collectionView.dequeueReusableCell(withReuseIdentifier: PhotoCollectionViewCell.cellIdentifier(), for: indexPath) as! PhotoCollectionViewCell
         }
-        // This cannot use the currentRotation call as it might be called when .FaceUp or .FaceDown is device-orientation
-        cell.contentView.rotateToDeviceOrientation(orientation)
+        if !shouldAutorotate {
+            // This cannot use the currentRotation call as it might be called when .FaceUp or .FaceDown is device-orientation
+            cell.contentView.rotateToDeviceOrientation(orientation)
+        }
         cell.delegate = self
         return cell
     }
@@ -666,3 +756,19 @@ extension UIView {
         }
     }
 }
+
+// MARK: - UIInterfaceOrientation extension for video orientation
+
+extension UIInterfaceOrientation {
+    var videoOrientation: AVCaptureVideoOrientation? {
+        switch self {
+        case .portraitUpsideDown: return .portraitUpsideDown
+        case .landscapeRight: return .landscapeRight
+        case .landscapeLeft: return .landscapeLeft
+        case .portrait: return .portrait
+        default: return nil
+        }
+    }
+}
+
+
