@@ -25,8 +25,6 @@ class CaptureManager: NSObject {
 
     let previewLayer: AVCaptureVideoPreviewLayer
     let viewfinderMode: CaptureManagerViewfinderMode
-    
-    let shouldAutorotate = UIDevice.current.userInterfaceIdiom == .pad
 
     var flashMode: AVCaptureDevice.FlashMode = .auto
 
@@ -140,9 +138,7 @@ class CaptureManager: NSObject {
             guard let self = self else { return }
             guard let connection = self.cameraOutput.connection(with: .video) else { return }
 
-            if !self.shouldAutorotate {
-                connection.videoOrientation = self.orientation
-            }
+            connection.videoOrientation = self.orientation
             self.cameraSettings = self.createCapturePhotoSettingsObject()
 
             guard let cameraSettings = self.cameraSettings else { return }
@@ -199,15 +195,18 @@ class CaptureManager: NSObject {
     // Orientation change function required because we've locked the interface in portrait
     // and DeviceOrientation does not map 1:1 with AVCaptureVideoOrientation
     @objc func changedOrientationNotification(_: Notification?) {
-        if shouldAutorotate {
-            return
+        var currentDeviceOrientation = UIDevice.current.orientation
+        // fallback to interface orientation if the device orientation is not available
+        if currentDeviceOrientation == .unknown || currentDeviceOrientation.isFlat {
+            currentDeviceOrientation = UIDeviceOrientation(rawValue: (UIApplication.shared.windows.first?.windowScene?.interfaceOrientation ?? .unknown).rawValue)!
         }
-        let currentDeviceOrientation = UIDevice.current.orientation
         switch currentDeviceOrientation {
         case .faceDown, .faceUp, .unknown:
+            OTC.log("Current orientation: %@", currentDeviceOrientation == .faceDown ? "faceDown" : currentDeviceOrientation == .faceUp ? "faceUp" : "unknown")
             break
         case .landscapeLeft, .landscapeRight, .portrait, .portraitUpsideDown:
             orientation = AVCaptureVideoOrientation(rawValue: currentDeviceOrientation.rawValue) ?? .portrait
+            OTC.log("Current orientation: %@", currentDeviceOrientation.isLandscape ? "landscape" : "portrait")
         @unknown default:
             return
         }
@@ -215,6 +214,10 @@ class CaptureManager: NSObject {
 }
 
 // MARK: - Private methods
+
+private var shouldAutorotate: Bool {
+    return UIDevice.current.userInterfaceIdiom == .pad
+}
 
 private extension CaptureManager {
     func createCapturePhotoSettingsObject() -> AVCapturePhotoSettings {
@@ -278,7 +281,7 @@ private extension CaptureManager {
                 if self.session.canAddInput(input) {
                     self.session.addInput(input)
                 } else {
-                    NSLog("Failed to add input \(input) to session \(self.session)")
+                    OTC.log("Failed to add input \(input) to session \(self.session)")
                 }
             } catch let error1 as NSError {
                 error = error1

@@ -82,7 +82,11 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         super.viewDidLoad()
 
         view.backgroundColor = UIColor.black
-
+        
+        if shouldAutorotate {
+            OTC.log("Couldn't lock device orientation (iPad)")
+        }
+        
         NotificationCenter.default.addObserver(forName: UIDevice.orientationDidChangeNotification, object: nil, queue: nil) { (_) -> Void in
             switch UIDevice.current.orientation {
             case .faceDown, .faceUp, .unknown:
@@ -96,7 +100,7 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         }
         
         NotificationCenter.default.addObserver(forName: NSNotification.Name.AVCaptureSessionWasInterrupted, object: nil, queue: nil) { (_) -> Void in
-            NSLog("AVCaptureSessionWasInterrupted")
+            OTC.log("AVCaptureSessionWasInterrupted")
             self.captureManager.stop(nil)
             self.dismiss(animated: true, completion: nil)
         }
@@ -124,10 +128,9 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         
         captureManager.start(nil)
         
-        if shouldAutorotate {
-            DispatchQueue.main.async {
-                self.updateVideoOrientation()
-            }
+        // captureManager.previewLayer.connection take some time to be available the first time the camera is used
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            self.updateVideoOrientation()
         }
         
     }
@@ -593,11 +596,11 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
     func updateVideoOrientation() {
         let previewLayer = captureManager.previewLayer
         guard let connection = previewLayer.connection else {
-            NSLog("previewLayer.connection is nil")
+            OTC.log("previewLayer.connection is nil")
             return
         }
         guard connection.isVideoOrientationSupported else {
-            NSLog("isVideoOrientationSupported is false")
+            OTC.log("isVideoOrientationSupported is false")
             return
         }
         let statusBarOrientation : UIInterfaceOrientation?
@@ -620,13 +623,12 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
     open override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
         super.viewWillTransition(to: size, with: coordinator)
         
-        if shouldAutorotate {
-            coordinator.animate(alongsideTransition: nil, completion: { [weak self] (context) in
-                DispatchQueue.main.async(execute: {
-                    self?.updateVideoOrientation()
-                })
+        coordinator.animate(alongsideTransition: nil, completion: { [weak self] (context) in
+            DispatchQueue.main.async(execute: {
+                self?.updateVideoOrientation()
             })
-        }
+        })
+        
     }
         
     // MARK: - Private methods
