@@ -54,6 +54,7 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
     fileprivate var focusIndicatorView = UIView(frame: CGRect(x: 0, y: 0, width: 64, height: 64))
     fileprivate var flashButton = UIButton()
     fileprivate var switchCameraButton = UIButton()
+    fileprivate var sendButton = UIButton()
     fileprivate var pickerButton: UIButton?
     fileprivate var closeButton = UIButton()
     fileprivate let buttonMargin: CGFloat = 12
@@ -244,8 +245,25 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         flashButton.tintColor = UIColor.white
         flashButton.layer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
         
+        let sendButtonSize : CGFloat = 30
+        sendButton.frame = CGRect(x: viewFrame.width - sendButtonSize - buttonMargin, y: sendButton.frame.midY - sendButtonSize/2, width: sendButtonSize, height: sendButtonSize)
+        let sendIcon = UIImage(named: "doneIcon", in: Bundle(for: PhotoCaptureViewController.self), compatibleWith: nil)
+        sendButton.setImage(sendIcon, for: .normal)
+        sendButton.setTitle("", for: .normal)
+        sendButton.addTarget(self, action: #selector(doneButtonTapped(_:)), for: .touchUpInside)
+        sendButton.titleLabel?.font = UIFont.preferredFont(forTextStyle: .footnote)
+        sendButton.tintColor = UIColor.white
+        sendButton.layer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+        containerView.addSubview(self.sendButton)
+        sendButton.translatesAutoresizingMaskIntoConstraints = false
+        sendButton.rightAnchor.constraint(equalTo: self.containerView.rightAnchor, constant: -sendButtonSize).isActive = true
+        sendButton.centerYAnchor.constraint(equalTo: self.captureButton.centerYAnchor).isActive = true
+        sendButton.widthAnchor.constraint(equalToConstant: sendButtonSize).isActive = true
+        sendButton.heightAnchor.constraint(equalToConstant: sendButtonSize).isActive = true
+        sendButton.isHidden = true
+
         let switchCameraButtonSize : CGFloat = 30
-        switchCameraButton.frame = CGRect(x: viewFrame.width - switchCameraButtonSize - buttonMargin, y: captureButton.frame.midY - switchCameraButtonSize/2, width: switchCameraButtonSize, height: switchCameraButtonSize)
+        switchCameraButton.frame = CGRect(x: viewFrame.width - switchCameraButtonSize - buttonMargin, y: viewFrame.origin.y + buttonMargin, width: switchCameraButtonSize, height: switchCameraButtonSize)
         let switchCameraIcon = UIImage(named: "SwitchCameraIcon", in: Bundle(for: PhotoCaptureViewController.self), compatibleWith: nil)
         switchCameraButton.setImage(switchCameraIcon, for: .normal)
         switchCameraButton.setTitle("", for: .normal)
@@ -253,15 +271,16 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         switchCameraButton.titleLabel?.font = UIFont.preferredFont(forTextStyle: .footnote)
         switchCameraButton.tintColor = UIColor.white
         switchCameraButton.layer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
-
-        let closeButtonSize : CGFloat = 48
+        
+        
+        let closeButtonSize : CGFloat = 30
         closeButton.frame = CGRect(x: viewFrame.origin.x + buttonMargin, y: viewFrame.origin.y + buttonMargin, width: closeButtonSize, height: closeButtonSize)
-        let closeIcon = UIImage(named: "CloseIcon", in: Bundle(for: PhotoCaptureViewController.self), compatibleWith: nil)
-        closeButton.setImage(closeIcon, for: .normal)
         closeButton.addTarget(self, action: #selector(doneButtonTapped(_:)), for: .touchUpInside)
-        closeButton.setTitle("", for: .normal)
+        closeButton.setTitle(NSLocalizedString("cancel", comment: ""), for: .normal)
         closeButton.tintColor = UIColor.white
+        closeButton.titleLabel?.textAlignment = .left
         closeButton.layer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+        closeButton.sizeToFit()
         self.view.addSubview(closeButton)
 
         if enableLowLightWarning {
@@ -290,13 +309,9 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
                 self.flashButton.widthAnchor.constraint(equalToConstant: self.flashButtonWidth).isActive = true
                 self.flashButton.heightAnchor.constraint(equalToConstant: self.flashButtonHeight).isActive = true
             }
+            
             if self.captureManager.hasFrontCamera {
-                self.containerView.addSubview(self.switchCameraButton)
-                self.switchCameraButton.translatesAutoresizingMaskIntoConstraints = false
-                self.switchCameraButton.rightAnchor.constraint(equalTo: self.containerView.rightAnchor, constant: -switchCameraButtonSize).isActive = true
-                self.switchCameraButton.centerYAnchor.constraint(equalTo: self.captureButton.centerYAnchor).isActive = true
-                self.switchCameraButton.widthAnchor.constraint(equalToConstant: switchCameraButtonSize).isActive = true
-                self.switchCameraButton.heightAnchor.constraint(equalToConstant: switchCameraButtonSize).isActive = true
+                self.view.addSubview(self.switchCameraButton)
             }
             
             UIView.animate(withDuration: 0.2, animations: {
@@ -549,6 +564,9 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
                 self.collectionView.insertItems(at: [insertedIndexPath])
             }, completion: { _ in
                 self.scrollToLastAddedAssetAnimated(true)
+                if self.collectionView.numberOfItems(inSection: 0) > 0 {
+                    self.sendButton.isHidden = false
+                }
             })
         }
     }
@@ -660,7 +678,7 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
             self.flashButton.rotateToCurrentDeviceOrientation()
             self.closeButton.rotateToCurrentDeviceOrientation()
             self.switchCameraButton.rotateToCurrentDeviceOrientation()
-
+            self.sendButton.rotateToCurrentDeviceOrientation()
             for cell in self.collectionView.visibleCells {
                 cell.contentView.rotateToCurrentDeviceOrientation()
             }
@@ -694,6 +712,10 @@ extension PhotoCaptureViewController: UICollectionViewDataSource, PhotoCollectio
             deleteAssetAtIndex(indexPath.item, handler: {
                 self.delegate?.photoCaptureViewController(self, deleteAssetAtIndexPath: indexPath)
             })
+        }
+        
+        if self.collectionView.numberOfItems(inSection: 0) == 0 {
+            self.sendButton.isHidden = true
         }
     }
 }
