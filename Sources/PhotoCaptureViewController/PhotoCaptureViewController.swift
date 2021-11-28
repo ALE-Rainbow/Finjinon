@@ -279,7 +279,7 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         let closeButtonSize : CGFloat = 30
         closeButton.frame = CGRect(x: viewFrame.origin.x + buttonMargin, y: viewFrame.origin.y + buttonMargin, width: closeButtonSize, height: closeButtonSize)
         closeButton.addTarget(self, action: #selector(doneButtonTapped(_:)), for: .touchUpInside)
-        closeButton.setTitle(NSLocalizedString("cancel", comment: ""), for: .normal)
+        closeButton.setTitle("Cancel", for: .normal)
         closeButton.tintColor = UIColor.white
         closeButton.titleLabel?.textAlignment = .left
         closeButton.layer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
