@@ -45,9 +45,9 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
 
     open var enableLowLightWarning = false
     
-    open var cancelButtonTitle : String? = nil
+    open var cancelButtonTitle : String? = "Cancel"
     
-    open var doneButtonTitle : String? = nil
+    open var doneButtonTitle : String? = "Done"
     
     fileprivate let storage = PhotoStorage()
     fileprivate let captureManager = CaptureManager()
@@ -254,7 +254,7 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         
         let sendButtonSize : CGFloat = 30
         sendButton.frame = CGRect(x: viewFrame.width - sendButtonSize - buttonMargin, y: sendButton.frame.midY - sendButtonSize/2, width: sendButtonSize, height: sendButtonSize)
-        sendButton.setTitle("Done", for: .normal)
+        sendButton.setTitle(doneButtonTitle, for: .normal)
         sendButton.addTarget(self, action: #selector(doneButtonTapped(_:)), for: .touchUpInside)
         sendButton.tintColor = UIColor.white
         sendButton.sizeToFit()
@@ -279,7 +279,7 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         let closeButtonSize : CGFloat = 30
         closeButton.frame = CGRect(x: viewFrame.origin.x + buttonMargin, y: sendButton.frame.midY - closeButtonSize/2, width: closeButtonSize, height: closeButtonSize)
         closeButton.addTarget(self, action: #selector(cancelButtonTapped(_:)), for: .touchUpInside)
-        closeButton.setTitle("Cancel", for: .normal)
+        closeButton.setTitle(cancelButtonTitle, for: .normal)
         closeButton.tintColor = UIColor.white
         closeButton.layer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
         closeButton.sizeToFit()
