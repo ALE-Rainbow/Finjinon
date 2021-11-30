@@ -45,6 +45,10 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
 
     open var enableLowLightWarning = false
     
+    open var cancelButtonTitle : String? = nil
+    
+    open var doneButtonTitle : String? = nil
+    
     fileprivate let storage = PhotoStorage()
     fileprivate let captureManager = CaptureManager()
     fileprivate var previewView = UIView()
@@ -238,7 +242,7 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         captureButton.isEnabled = false
         captureButton.accessibilityLabel = "finjinon.captureButton".localized()
 
-        flashButton.frame = CGRect(x: buttonMargin, y: captureButton.frame.midY - flashButtonHeight/2, width: flashButtonWidth, height: flashButtonHeight)
+        flashButton.frame = CGRect(x: buttonMargin, y: viewFrame.origin.y + buttonMargin, width: flashButtonWidth, height: flashButtonHeight)
         let icon = UIImage(named: "flashAutoIcon", in: Bundle(for: PhotoCaptureViewController.self), compatibleWith: nil)
         flashButton.setImage(icon, for: .normal)
         flashButton.addTarget(self, action: #selector(flashButtonTapped(_:)), for: .touchUpInside)
@@ -247,19 +251,15 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         
         let sendButtonSize : CGFloat = 30
         sendButton.frame = CGRect(x: viewFrame.width - sendButtonSize - buttonMargin, y: sendButton.frame.midY - sendButtonSize/2, width: sendButtonSize, height: sendButtonSize)
-        let sendIcon = UIImage(named: "doneIcon", in: Bundle(for: PhotoCaptureViewController.self), compatibleWith: nil)
-        sendButton.setImage(sendIcon, for: .normal)
-        sendButton.setTitle("", for: .normal)
+        sendButton.setTitle("Done", for: .normal)
         sendButton.addTarget(self, action: #selector(doneButtonTapped(_:)), for: .touchUpInside)
-        sendButton.titleLabel?.font = UIFont.preferredFont(forTextStyle: .footnote)
         sendButton.tintColor = UIColor.white
+        sendButton.sizeToFit()
         sendButton.layer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
         containerView.addSubview(self.sendButton)
         sendButton.translatesAutoresizingMaskIntoConstraints = false
-        sendButton.rightAnchor.constraint(equalTo: self.containerView.rightAnchor, constant: -sendButtonSize).isActive = true
+        sendButton.rightAnchor.constraint(equalTo: self.view.rightAnchor, constant: -buttonMargin).isActive = true
         sendButton.centerYAnchor.constraint(equalTo: self.captureButton.centerYAnchor).isActive = true
-        sendButton.widthAnchor.constraint(equalToConstant: sendButtonSize).isActive = true
-        sendButton.heightAnchor.constraint(equalToConstant: sendButtonSize).isActive = true
         sendButton.isHidden = true
 
         let switchCameraButtonSize : CGFloat = 30
@@ -274,14 +274,17 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         
         
         let closeButtonSize : CGFloat = 30
-        closeButton.frame = CGRect(x: viewFrame.origin.x + buttonMargin, y: viewFrame.origin.y + buttonMargin, width: closeButtonSize, height: closeButtonSize)
-        closeButton.addTarget(self, action: #selector(doneButtonTapped(_:)), for: .touchUpInside)
+        closeButton.frame = CGRect(x: viewFrame.origin.x + buttonMargin, y: sendButton.frame.midY - closeButtonSize/2, width: closeButtonSize, height: closeButtonSize)
+        closeButton.addTarget(self, action: #selector(cancelButtonTapped(_:)), for: .touchUpInside)
         closeButton.setTitle("Cancel", for: .normal)
         closeButton.tintColor = UIColor.white
-        closeButton.titleLabel?.textAlignment = .left
         closeButton.layer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
         closeButton.sizeToFit()
-        self.view.addSubview(closeButton)
+        containerView.addSubview(closeButton)
+        closeButton.translatesAutoresizingMaskIntoConstraints = false
+        closeButton.leftAnchor.constraint(equalTo: self.view.leftAnchor, constant: buttonMargin).isActive = true
+        closeButton.centerYAnchor.constraint(equalTo: self.captureButton.centerYAnchor).isActive = true
+      
 
         if enableLowLightWarning {
             view.addSubview(lowLightView)
@@ -302,12 +305,7 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
             }
 
             if self.captureManager.hasFlash {
-                self.containerView.addSubview(self.flashButton)
-                self.flashButton.translatesAutoresizingMaskIntoConstraints = false
-                self.flashButton.leftAnchor.constraint(equalTo: self.containerView.leftAnchor, constant: self.buttonMargin).isActive = true
-                self.flashButton.centerYAnchor.constraint(equalTo: self.captureButton.centerYAnchor).isActive = true
-                self.flashButton.widthAnchor.constraint(equalToConstant: self.flashButtonWidth).isActive = true
-                self.flashButton.heightAnchor.constraint(equalToConstant: self.flashButtonHeight).isActive = true
+                self.view.addSubview(self.flashButton)
             }
             
             if self.captureManager.hasFrontCamera {
@@ -577,6 +575,10 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         }
     }
 
+    @objc func cancelButtonTapped(_: UIButton) {
+        dismiss(animated: true, completion: nil)
+    }
+    
     @objc func doneButtonTapped(_: UIButton) {
         delegate?.photoCaptureViewControllerDidFinish(self)
 
