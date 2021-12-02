@@ -45,7 +45,7 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
 
     open var enableLowLightWarning = false
     
-    open var cancelButtonTitle : String? = "Cancel"
+    open var closeButtonTitle : String? = "Cancel"
     
     open var doneButtonTitle : String? = "Done"
     
@@ -58,7 +58,7 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
     fileprivate var focusIndicatorView = UIView(frame: CGRect(x: 0, y: 0, width: 64, height: 64))
     fileprivate var flashButton = UIButton()
     fileprivate var switchCameraButton = UIButton()
-    fileprivate var sendButton = UIButton()
+    fileprivate var doneButton = UIButton()
     fileprivate var pickerButton: UIButton?
     fileprivate var closeButton = UIButton()
     fileprivate let buttonMargin: CGFloat = 12
@@ -252,18 +252,18 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         flashButton.tintColor = UIColor.white
         flashButton.layer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
         
-        let sendButtonSize : CGFloat = 30
-        sendButton.frame = CGRect(x: viewFrame.width - sendButtonSize - buttonMargin, y: sendButton.frame.midY - sendButtonSize/2, width: sendButtonSize, height: sendButtonSize)
-        sendButton.setTitle(doneButtonTitle, for: .normal)
-        sendButton.addTarget(self, action: #selector(doneButtonTapped(_:)), for: .touchUpInside)
-        sendButton.tintColor = UIColor.white
-        sendButton.sizeToFit()
-        sendButton.layer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
-        containerView.addSubview(self.sendButton)
-        sendButton.translatesAutoresizingMaskIntoConstraints = false
-        sendButton.rightAnchor.constraint(equalTo: self.view.rightAnchor, constant: -buttonMargin).isActive = true
-        sendButton.centerYAnchor.constraint(equalTo: self.captureButton.centerYAnchor).isActive = true
-        sendButton.isHidden = true
+        let doneButtonSize : CGFloat = 30
+        doneButton.frame = CGRect(x: viewFrame.width - doneButtonSize - buttonMargin, y: doneButton.frame.midY - doneButtonSize/2, width: doneButtonSize, height: doneButtonSize)
+        doneButton.setTitle(doneButtonTitle, for: .normal)
+        doneButton.addTarget(self, action: #selector(doneButtonTapped(_:)), for: .touchUpInside)
+        doneButton.tintColor = UIColor.white
+        doneButton.sizeToFit()
+        doneButton.layer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+        containerView.addSubview(self.doneButton)
+        doneButton.translatesAutoresizingMaskIntoConstraints = false
+        doneButton.rightAnchor.constraint(equalTo: self.view.rightAnchor, constant: -buttonMargin).isActive = true
+        doneButton.centerYAnchor.constraint(equalTo: self.captureButton.centerYAnchor).isActive = true
+        doneButton.isHidden = true
 
         let switchCameraButtonSize : CGFloat = 30
         switchCameraButton.frame = CGRect(x: viewFrame.width - switchCameraButtonSize - buttonMargin, y: viewFrame.origin.y + buttonMargin, width: switchCameraButtonSize, height: switchCameraButtonSize)
@@ -277,9 +277,9 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         
         
         let closeButtonSize : CGFloat = 30
-        closeButton.frame = CGRect(x: viewFrame.origin.x + buttonMargin, y: sendButton.frame.midY - closeButtonSize/2, width: closeButtonSize, height: closeButtonSize)
+        closeButton.frame = CGRect(x: viewFrame.origin.x + buttonMargin, y: doneButton.frame.midY - closeButtonSize/2, width: closeButtonSize, height: closeButtonSize)
         closeButton.addTarget(self, action: #selector(cancelButtonTapped(_:)), for: .touchUpInside)
-        closeButton.setTitle(cancelButtonTitle, for: .normal)
+        closeButton.setTitle(closeButtonTitle, for: .normal)
         closeButton.tintColor = UIColor.white
         closeButton.layer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
         closeButton.sizeToFit()
@@ -566,7 +566,7 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
             }, completion: { _ in
                 self.scrollToLastAddedAssetAnimated(true)
                 if self.collectionView.numberOfItems(inSection: 0) > 0 {
-                    self.sendButton.isHidden = false
+                    self.doneButton.isHidden = false
                 }
             })
         }
@@ -682,7 +682,7 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
             self.flashButton.rotateToCurrentDeviceOrientation()
             self.closeButton.rotateToCurrentDeviceOrientation()
             self.switchCameraButton.rotateToCurrentDeviceOrientation()
-            self.sendButton.rotateToCurrentDeviceOrientation()
+            self.doneButton.rotateToCurrentDeviceOrientation()
             for cell in self.collectionView.visibleCells {
                 cell.contentView.rotateToCurrentDeviceOrientation()
             }
@@ -719,7 +719,7 @@ extension PhotoCaptureViewController: UICollectionViewDataSource, PhotoCollectio
         }
         
         if self.collectionView.numberOfItems(inSection: 0) == 0 {
-            self.sendButton.isHidden = true
+            self.doneButton.isHidden = true
         }
     }
 }
