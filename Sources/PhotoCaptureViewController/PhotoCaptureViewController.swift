@@ -278,7 +278,7 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         
         let closeButtonSize : CGFloat = 30
         closeButton.frame = CGRect(x: viewFrame.origin.x + buttonMargin, y: doneButton.frame.midY - closeButtonSize/2, width: closeButtonSize, height: closeButtonSize)
-        closeButton.addTarget(self, action: #selector(cancelButtonTapped(_:)), for: .touchUpInside)
+        closeButton.addTarget(self, action: #selector(closeButtonTapped(_:)), for: .touchUpInside)
         closeButton.setTitle(closeButtonTitle, for: .normal)
         closeButton.tintColor = UIColor.white
         closeButton.layer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
@@ -578,7 +578,7 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         }
     }
 
-    @objc func cancelButtonTapped(_: UIButton) {
+    @objc func closeButtonTapped(_: UIButton) {
         dismiss(animated: true, completion: nil)
     }
     
