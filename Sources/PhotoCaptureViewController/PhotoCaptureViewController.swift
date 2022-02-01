@@ -477,7 +477,20 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
 
     
     @objc func switchCameraButtonTapped(_: UIButton) {
-        captureManager.switchCameraPosition()
+        captureManager.switchCameraPosition { error in
+            guard error == nil else {
+                return
+            }
+            
+            if self.captureManager.hasFlash {
+                if self.flashButton.isDescendant(of: self.view) == false {
+                    self.view.addSubview(self.flashButton)
+                }
+            }
+            else  {
+                self.flashButton.removeFromSuperview()
+            }
+        }
     }
 
     @objc func presentImagePickerTapped(_: AnyObject) {
