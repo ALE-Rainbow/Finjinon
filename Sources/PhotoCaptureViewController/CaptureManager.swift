@@ -181,15 +181,13 @@ class CaptureManager: NSObject {
         return next
     }
     
-    func switchCameraPosition() {
+    func switchCameraPosition(_ completion: @escaping (NSError?) -> Void) {
         if self.cameraPosition == .back {
             self.cameraPosition = .front
         } else {
             self.cameraPosition = .back
         }
-        self.configure(){_ in
-            
-        }
+        self.configure(completion)
     }
 
     // Orientation change function required because we've locked the interface in portrait
