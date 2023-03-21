@@ -63,7 +63,12 @@ class CaptureManager: NSObject {
 
     override init() {
         session.sessionPreset = AVCaptureSession.Preset.photo
-        self.viewfinderMode = .fullScreen
+        var viewfinderMode: CaptureManagerViewfinderMode {
+            let screenBounds = UIScreen.main.nativeBounds
+            let ratio = screenBounds.height / screenBounds.width
+            return ratio <= 1.5 ? .fullScreen : .window
+        }
+        self.viewfinderMode = viewfinderMode
 
         previewLayer = AVCaptureVideoPreviewLayer(session: session)
         previewLayer.videoGravity = self.viewfinderMode == .fullScreen ? AVLayerVideoGravity.resizeAspectFill : AVLayerVideoGravity.resize

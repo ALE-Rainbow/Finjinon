@@ -145,12 +145,6 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         captureManager.stop(nil)
     }
     
-    override open func viewDidLayoutSubviews() {
-        super.viewDidLayoutSubviews()
-        // Allows the preview layer to fill the whole screen
-        self.captureManager.previewLayer.frame = self.view.layer.bounds
-    }
-    
     func setupSubviews() {
         // Subviews need to be added and framed during viewDidAppear for the iPhone X's safeAreas to be known.
         if subviewSetupDone { return }
@@ -628,27 +622,25 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         
     func updateVideoOrientation() {
         let previewLayer = captureManager.previewLayer
+        
         guard let connection = previewLayer.connection else {
             OTC.log("previewLayer.connection is nil")
             return
         }
+        
         guard connection.isVideoOrientationSupported else {
             OTC.log("isVideoOrientationSupported is false")
             return
         }
+        
         let statusBarOrientation : UIInterfaceOrientation?
-        if #available(iOS 13.0, *) {
-            if let windowScene = UIApplication.shared.windows.first?.windowScene {
-                statusBarOrientation = windowScene.interfaceOrientation
-            } else {
-                statusBarOrientation = nil
-            }
+        if let windowScene = UIApplication.shared.windows.first?.windowScene {
+            statusBarOrientation = windowScene.interfaceOrientation
         } else {
-            // Fallback on earlier versions
-            statusBarOrientation = UIApplication.shared.statusBarOrientation
+            statusBarOrientation = nil
         }
+        
         let videoOrientation: AVCaptureVideoOrientation = statusBarOrientation?.videoOrientation ?? .portrait
-        previewLayer.frame = view.layer.bounds
         previewLayer.connection?.videoOrientation = videoOrientation
         previewLayer.removeAllAnimations()
     }
