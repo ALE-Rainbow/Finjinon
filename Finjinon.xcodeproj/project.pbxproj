@@ -31,6 +31,7 @@
 		CFBD7138229D66C0003B1BD9 /* String+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFBD7137229D66C0003B1BD9 /* String+Extensions.swift */; };
 		CFBD7139229D6876003B1BD9 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = CFBD713B229D6876003B1BD9 /* Localizable.strings */; };
 		CFBD713E229D68FF003B1BD9 /* LowLightView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFBD713D229D68FF003B1BD9 /* LowLightView.swift */; };
+		E51B08512D4105490097E3FE /* UIApplication+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = E51B08502D4105410097E3FE /* UIApplication+Extensions.swift */; };
 		E55F72FF26D52C710045B4A3 /* OTC.swift in Sources */ = {isa = PBXBuildFile; fileRef = E55F72FE26D52C710045B4A3 /* OTC.swift */; };
 		F23C372F22A7D5F500ECC73C /* CloseButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = F23C372D22A7D5A900ECC73C /* CloseButton.swift */; };
 		F23C373022A7D5F500ECC73C /* TriggerButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = F23C372B22A7D3A200ECC73C /* TriggerButton.swift */; };
@@ -103,6 +104,7 @@
 		CFBD713A229D6876003B1BD9 /* nb */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = nb; path = nb.lproj/Localizable.strings; sourceTree = "<group>"; };
 		CFBD713C229D687C003B1BD9 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		CFBD713D229D68FF003B1BD9 /* LowLightView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LowLightView.swift; sourceTree = "<group>"; };
+		E51B08502D4105410097E3FE /* UIApplication+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIApplication+Extensions.swift"; sourceTree = "<group>"; };
 		E55F72FE26D52C710045B4A3 /* OTC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OTC.swift; sourceTree = "<group>"; };
 		F23C372B22A7D3A200ECC73C /* TriggerButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TriggerButton.swift; sourceTree = "<group>"; };
 		F23C372D22A7D5A900ECC73C /* CloseButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloseButton.swift; sourceTree = "<group>"; };
@@ -244,6 +246,7 @@
 		F23C372522A7D12900ECC73C /* Extensions */ = {
 			isa = PBXGroup;
 			children = (
+				E51B08502D4105410097E3FE /* UIApplication+Extensions.swift */,
 				CFBD7137229D66C0003B1BD9 /* String+Extensions.swift */,
 			);
 			path = Extensions;
@@ -451,6 +454,7 @@
 				CFBD7134229D6499003B1BD9 /* LowLightService.swift in Sources */,
 				CF9B3294229829E900CCB8F9 /* CaptureManager.swift in Sources */,
 				CF9B329A229829E900CCB8F9 /* PhotoStorage.swift in Sources */,
+				E51B08512D4105490097E3FE /* UIApplication+Extensions.swift in Sources */,
 				CFBD713E229D68FF003B1BD9 /* LowLightView.swift in Sources */,
 				F23C372F22A7D5F500ECC73C /* CloseButton.swift in Sources */,
 				F23C373022A7D5F500ECC73C /* TriggerButton.swift in Sources */,
@@ -648,11 +652,11 @@
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = D34XZHQLE3;
+				DEVELOPMENT_TEAM = YKWS6T5472;
 				INFOPLIST_FILE = "$(SRCROOT)/Demo/Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = no.finn.finjinon.Demo;
+				PRODUCT_BUNDLE_IDENTIFIER = com.alcatellucent.otcl.finjinon.Demo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -665,11 +669,11 @@
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = D34XZHQLE3;
+				DEVELOPMENT_TEAM = YKWS6T5472;
 				INFOPLIST_FILE = "$(SRCROOT)/Demo/Info.plist";
-				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = no.finn.finjinon.Demo;
+				PRODUCT_BUNDLE_IDENTIFIER = com.alcatellucent.otcl.finjinon.Demo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -689,7 +693,7 @@
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				INFOPLIST_FILE = "$(SRCROOT)/Sources/Info.plist";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = no.finn.finjinon.Finjinon;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
@@ -715,7 +719,7 @@
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				INFOPLIST_FILE = "$(SRCROOT)/Sources/Info.plist";
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = no.finn.finjinon.Finjinon;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";

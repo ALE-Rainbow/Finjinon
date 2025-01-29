@@ -10,6 +10,12 @@ enum CaptureManagerViewfinderMode {
     case window
 }
 
+enum PhysicalCameraAngle : Int {
+    case ultraWide = 0
+    case wide = 1
+    case telephoto = 2
+}
+
 protocol CaptureManagerDelegate: AnyObject {
     func captureManager(_ manager: CaptureManager, didCaptureImageData data: Data?, withMetadata metadata: NSDictionary?)
     func captureManager(_ manager: CaptureManager, didDetectLightingCondition: LightingCondition)
@@ -47,6 +53,14 @@ class CaptureManager: NSObject {
     }
 
     var cameraPosition : AVCaptureDevice.Position = .back
+    
+    var zoomFactors : [NSNumber] = []
+    var zoomFactor : CGFloat {
+        cameraDevice?.videoZoomFactor ?? 1.0
+    }
+    var maxZoomFactor : CGFloat {
+        cameraDevice?.activeFormat.videoMaxZoomFactor ?? 0.0
+    }
     
     private let session = AVCaptureSession()
     private let captureQueue = DispatchQueue(label: "no.finn.finjinon-captures", attributes: [])
@@ -201,7 +215,7 @@ class CaptureManager: NSObject {
         var currentDeviceOrientation = UIDevice.current.orientation
         // fallback to interface orientation if the device orientation is not available
         if currentDeviceOrientation == .unknown || currentDeviceOrientation.isFlat {
-            currentDeviceOrientation = UIDeviceOrientation(rawValue: (UIApplication.shared.windows.first?.windowScene?.interfaceOrientation ?? .unknown).rawValue)!
+            currentDeviceOrientation = UIDeviceOrientation(rawValue: (UIApplication.mainScene?.interfaceOrientation ?? .unknown).rawValue)!
         }
         switch currentDeviceOrientation {
         case .faceDown, .faceUp, .unknown:
@@ -212,6 +226,38 @@ class CaptureManager: NSObject {
             OTC.log("Current orientation: %@", currentDeviceOrientation.isLandscape ? "landscape" : "portrait")
         @unknown default:
             return
+        }
+    }
+    
+    func setZoomFactor(_ zoomFactor: CGFloat, animated: Bool = false) {
+        lockCurrentCameraDeviceForConfiguration { device in
+            if let device {
+                if animated {
+                    device.ramp(toVideoZoomFactor: zoomFactor, withRate: 10.0)
+                } else {
+                    device.videoZoomFactor = zoomFactor
+                }
+            }
+        }
+    }
+    
+    func switchToPhysicalCamera(angle : PhysicalCameraAngle, animated: Bool = false) {
+        if angle == .wide {
+            setZoomFactor(CGFloat(truncating: zoomFactors.first ?? 1.0), animated: animated)
+            
+        } else if angle == .telephoto {
+            if zoomFactors.count > 1 {
+                setZoomFactor(CGFloat(truncating: zoomFactors[1]), animated: animated)
+            } else {
+                OTC.log( "No telephoto zoom available")
+            }
+            
+        } else {
+            if zoomFactors.count > 0 {
+                setZoomFactor(1.0, animated: animated)
+            } else {
+                OTC.log( "No ultrawide zoom available")
+            }
         }
     }
 }
@@ -259,12 +305,16 @@ private extension CaptureManager {
             self.cameraDevice?.unlockForConfiguration()
         }
     }
-
+    
     func configure(_ completion: @escaping (NSError?) -> Void) {
         captureQueue.async { [weak self] in
             guard let self = self else { return }
 
             self.cameraDevice = self.cameraDeviceWithPosition(self.cameraPosition)
+            self.zoomFactors = self.cameraDevice?.virtualDeviceSwitchOverVideoZoomFactors ?? []
+            OTC.log("zoomFactors: \(self.zoomFactors)")
+            self.switchToPhysicalCamera(angle: .wide)
+            
             var error: NSError?
             
             #if !targetEnvironment(simulator)
@@ -327,33 +377,57 @@ private extension CaptureManager {
     func cameraDeviceWithPosition(_ position: AVCaptureDevice.Position) -> AVCaptureDevice? {
         let deviceTypes: [AVCaptureDevice.DeviceType]
 
-        if #available(iOS 11.2, *) {
-            deviceTypes = [.builtInTrueDepthCamera, .builtInDualCamera, .builtInWideAngleCamera]
-        } else {
-            deviceTypes = [.builtInWideAngleCamera]
-        }
+        deviceTypes = [.builtInWideAngleCamera, .builtInDualWideCamera, .builtInTripleCamera]
 
         let discoverySession = AVCaptureDevice.DiscoverySession(deviceTypes: deviceTypes, mediaType: .video, position: .unspecified)
         let availableCameraDevices = discoverySession.devices
 
         guard availableCameraDevices.isEmpty == false else {
-            print("Error no camera devices found")
+            OTC.log("Error no camera devices found")
             return nil
         }
 
+        var bestDeviceType = AVCaptureDevice.DeviceType.builtInWideAngleCamera
+    
         for device in availableCameraDevices {
+            OTC.log("'\(device.localizedName)' position: \(device.position == .front ? "front" : "back"), aperture: \(device.lensAperture)")
             if device.position == AVCaptureDevice.Position.front {
                 hasFrontCamera = true
+            } else {
+                if bestDeviceType == .builtInWideAngleCamera {
+                    if device.deviceType == .builtInDualWideCamera || device.deviceType == .builtInTripleCamera {
+                        bestDeviceType = device.deviceType
+                    }
+                } else if bestDeviceType == .builtInDualWideCamera {
+                    bestDeviceType = device.deviceType
+                }
             }
         }
 
         for device in availableCameraDevices {
-            if device.position == position {
+            if position == .front {
+                if device.position == position {
+                    OTC.log("Front camera: '\(device.localizedName)'")
+                    return device
+                }
+            } else if device.deviceType == bestDeviceType {
+                OTC.log("Best back camera: '\(device.localizedName)'")
+                if device.isVirtualDevice {
+                    for camera in device.constituentDevices {
+                        OTC.log("\tPhysical camera: '\(camera.localizedName)'")
+                    }
+                }
                 return device
             }
         }
         
-        return AVCaptureDevice.default(for: AVMediaType.video)
+        if let device = AVCaptureDevice.default(for: AVMediaType.video) {
+            OTC.log("Default camera: '\(device.localizedName)'")
+            return device
+        }
+        
+        OTC.log("No available camera !")
+        return nil
     }
 
     func makeVideoDataOutput() -> AVCaptureVideoDataOutput {
@@ -368,31 +442,23 @@ private extension CaptureManager {
 // MARK: - AVCapturePhotoCaptureDelegate
 
 extension CaptureManager: AVCapturePhotoCaptureDelegate {
-    func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photoSampleBuffer: CMSampleBuffer?, previewPhoto previewPhotoSampleBuffer: CMSampleBuffer?, resolvedSettings: AVCaptureResolvedPhotoSettings, bracketSettings: AVCaptureBracketedStillImageSettings?, error: Error?) {
-
-        // We either call the delegate or the completion block not both.
-        if didCaptureImageCompletion != nil && delegate != nil {
-            didCaptureImageCompletion = nil
-        }
-
+    func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: (any Error)?) {
         guard error == nil else {
             if let error = error { delegate?.captureManager(self, didFailWithError: error as NSError) }
             return
         }
-
-        if let sampleBuffer = photoSampleBuffer, let data = AVCapturePhotoOutput.jpegPhotoDataRepresentation(forJPEGSampleBuffer: sampleBuffer, previewPhotoSampleBuffer: nil) {
-            if let metadata = CMCopyDictionaryOfAttachments(allocator: nil, target: sampleBuffer, attachmentMode: CMAttachmentMode(kCMAttachmentMode_ShouldPropagate)) as NSDictionary? {
-                DispatchQueue.main.async { [weak self] in
-                    guard let self = self else { return }
-                    if let completion = self.didCaptureImageCompletion {
-                        completion(data, metadata)
-                    } else {
-                        self.delegate?.captureManager(self, didCaptureImageData: data, withMetadata: metadata)
-                    }
+        
+        if let data = photo.fileDataRepresentation() {
+            let metadata = photo.metadata as NSDictionary
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self else { return }
+                if let completion = self.didCaptureImageCompletion {
+                    completion(data, metadata)
+                } else {
+                    self.delegate?.captureManager(self, didCaptureImageData: data, withMetadata: metadata)
                 }
-            } else {
-                if let error = error { delegate?.captureManager(self, didFailWithError: error as NSError) }
             }
+            
         } else {
             if let error = error { delegate?.captureManager(self, didFailWithError: error as NSError) }
         }
