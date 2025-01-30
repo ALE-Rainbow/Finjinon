@@ -74,6 +74,8 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
     fileprivate var lensButtons: [UIButton] = []
     fileprivate var lensButtonConfiguration : UIButton.Configuration = .borderedTinted()
     
+    fileprivate var emptyCollectionView = UIView(frame: CGRect(x: 15, y: 15, width: 148, height: 148))
+    
     fileprivate var orientation: UIDeviceOrientation = .portrait
 
     private lazy var lowLightView: LowLightView = {
@@ -232,9 +234,12 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         containerView.rightAnchor.constraint(equalTo: view.rightAnchor, constant: 0).isActive = true
         containerView.heightAnchor.constraint(equalToConstant: collectionViewBottomMargin + collectionViewHeight).isActive = true
 
-        collectionView.register(PhotoCollectionViewCell.self, forCellWithReuseIdentifier: "PhotoCell")
+        collectionView.register(PhotoCollectionViewCell.self, forCellWithReuseIdentifier: PhotoCollectionViewCell.cellIdentifier())
         collectionView.dataSource = self
         collectionView.delegate = self
+        
+        setupEmptyCollectionView()
+        collectionView.addSubview(emptyCollectionView)
         
         // Overlay buttons
         
@@ -303,6 +308,19 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         updateImagePickerButton()
 
         setupCaptureManager()
+    }
+    
+    /// Setup the view that is displayed when there is no taken photo in the collection view
+    private func setupEmptyCollectionView() {
+        let emptyCollectionViewBorder = CAShapeLayer()
+        emptyCollectionViewBorder.strokeColor = UIColor.white.cgColor
+        emptyCollectionViewBorder.lineWidth = 1.5
+        emptyCollectionViewBorder.lineJoin = CAShapeLayerLineJoin.round
+        emptyCollectionViewBorder.lineDashPattern = [6, 6]
+        emptyCollectionViewBorder.frame = emptyCollectionView.bounds
+        emptyCollectionViewBorder.fillColor = nil
+        emptyCollectionViewBorder.path = UIBezierPath(roundedRect: emptyCollectionView.bounds, cornerRadius: 24).cgPath
+        emptyCollectionView.layer.addSublayer(emptyCollectionViewBorder)
     }
     
     /// Determine the number of physical lens then configure the relevant switch lens buttons
@@ -478,19 +496,21 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         } else {
             let pickerButtonWidth: CGFloat = 114
             let pickerButtonHeight : CGFloat = 38
-            let buttonRect = CGRect(x: viewFrame.origin.x + buttonMargin, y: captureButton.frame.midY - pickerButtonHeight/2, width: pickerButtonWidth, height: pickerButtonHeight)
+            let buttonRect = CGRect(x: (containerView.frame.width - pickerButtonWidth)/2, y: lensStackViewOffset, width: pickerButtonWidth, height: pickerButtonHeight)
 
             if pickerButton == nil {
                 pickerButton = UIButton(frame: buttonRect)
-                pickerButton!.setTitle("finjinon.photos".localized(), for: .normal)
-                let icon = UIImage(named: "PhotosIcon", in: Bundle(for: PhotoCaptureViewController.self), compatibleWith: nil)
-                pickerButton!.setImage(icon, for: .normal)
-                pickerButton!.addTarget(self, action: #selector(presentImagePickerTapped(_:)), for: .touchUpInside)
-                pickerButton!.titleLabel?.font = UIFont.preferredFont(forTextStyle: .footnote)
-                pickerButton!.autoresizingMask = [.flexibleTopMargin]
-                pickerButton!.layer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
-                roundifyButton(pickerButton!)
-                containerView.addSubview(pickerButton!)
+                if let pickerButton {
+                    pickerButton.setTitle("finjinon.photos".localized(), for: .normal)
+                    let icon = UIImage(named: "PhotosIcon", in: Bundle(for: PhotoCaptureViewController.self), compatibleWith: nil)
+                    pickerButton.setImage(icon, for: .normal)
+                    pickerButton.addTarget(self, action: #selector(presentImagePickerTapped(_:)), for: .touchUpInside)
+                    pickerButton.titleLabel?.font = UIFont.preferredFont(forTextStyle: .footnote)
+                    pickerButton.autoresizingMask = [.flexibleTopMargin]
+                    pickerButton.layer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+                    roundifyButton(pickerButton)
+                    previewView.addSubview(pickerButton)
+                }
             } else {
                 pickerButton!.frame = buttonRect
             }
@@ -877,10 +897,10 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
             return
         }
         var pickerPosition: CGPoint = pickerButton?.frame.origin ?? .zero
-        if orientation == .landscapeLeft || orientation == .landscapeRight {
-            pickerPosition = pickerButton != nil ? CGPoint(x: viewFrame.origin.x + viewBounds.width - (pickerButton!.bounds.size.width / 2 - buttonMargin), y: viewFrame.origin.y + buttonMargin) : .zero
-        } else if orientation == .portrait || orientation == .portraitUpsideDown {
-            pickerPosition = pickerButton != nil ? CGPoint(x: viewFrame.origin.x + viewBounds.width - (pickerButton!.bounds.size.width + buttonMargin), y: viewFrame.origin.y + buttonMargin) : .zero
+        if orientation == .landscapeLeft || orientation == .landscapeRight, let pickerButton {
+            pickerPosition = CGPoint(x: (containerView.frame.width - pickerButton.bounds.size.width)/2, y: lensStackViewOffset)
+        } else if orientation == .portrait || orientation == .portraitUpsideDown, let pickerButton {
+            pickerPosition = CGPoint(x: (containerView.frame.height - pickerButton.bounds.size.width)/2, y: lensStackViewOffset)
         }
         let animations = {
             self.pickerButton?.rotateToCurrentDeviceOrientation()
@@ -901,8 +921,16 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
 }
 
 extension PhotoCaptureViewController: UICollectionViewDataSource, PhotoCollectionViewCellDelegate {
-    public func collectionView(_: UICollectionView, numberOfItemsInSection _: Int) -> Int {
-        return delegate?.photoCaptureViewControllerNumberOfAssets(self) ?? 0
+    public func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection _: Int) -> Int {
+        if let count = delegate?.photoCaptureViewControllerNumberOfAssets(self), count > 0 {
+            emptyCollectionView.isHidden = true
+            collectionView.isScrollEnabled = true
+            return count
+        } else {
+            emptyCollectionView.isHidden = false
+            collectionView.isScrollEnabled = false
+            return 0
+        }
     }
 
     public func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
@@ -917,6 +945,7 @@ extension PhotoCaptureViewController: UICollectionViewDataSource, PhotoCollectio
             cell.contentView.rotateToDeviceOrientation(orientation)
         }
         cell.delegate = self
+        
         return cell
     }
 
