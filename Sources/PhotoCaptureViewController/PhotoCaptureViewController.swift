@@ -413,14 +413,6 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         return attrTitle
     }
     
-    /// Action handler called when a camera button is tapped
-    /// - Parameter button: the camera button
-    @objc func handleLensButtonTapped(_ button: UIButton) {
-        lensButtons.forEach{ $0.isSelected = $0 == button ? true : false }
-        let cameraAngle = PhysicalCameraAngle(rawValue: button.tag) ?? .wide
-        captureManager.switchToPhysicalCamera(angle: cameraAngle, animated: true)
-    }
-    
     /// Setup an overlay button such as the flash or front/back camera switches
     /// - Parameters:
     ///   - button: the button
@@ -748,6 +740,15 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         captureManager.captureImage()
     }
 
+    /// Action handler called when a camera button is tapped
+    /// - Parameter button: the camera button
+    @objc func handleLensButtonTapped(_ button: UIButton) {
+        lensButtons.forEach{ $0.isSelected = $0 == button ? true : false }
+        let cameraAngle = PhysicalCameraAngle(rawValue: button.tag) ?? .wide
+        captureManager.switchToPhysicalCamera(angle: cameraAngle, animated: true)
+        updateSelectedLensTitle()
+    }
+    
     fileprivate func didAddAsset(_ asset: Asset) {
         DispatchQueue.main.async {
             self.collectionView.performBatchUpdates({
@@ -832,7 +833,7 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         // If no lens is selected (-1) the following code will set one
         let selectedIndex = selectedLensIndex() ?? -1
         // Search the hardware lens index matching the current zoomFactor
-        let newIndex = 1 + (captureManager.zoomFactors.lastIndex(where: { zoomFactor >= CGFloat(truncating: $0) }) ?? -1)
+        let newIndex = 1 + (captureManager.zoomFactors.lastIndex(where: { (10 * zoomFactor).rounded(.up) / 10 >= CGFloat(truncating: $0) }) ?? -1)
         if selectedIndex != newIndex {
             for(i, button) in lensButtons.enumerated() {
                 button.isSelected = i == newIndex
@@ -841,11 +842,18 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         updateSelectedLensTitle(withZoomFactor: zoomFactor)
     }
     
-    func updateSelectedLensTitle(withZoomFactor zoomFactor: CGFloat) {
-        lensButtons.forEach(){
-            if $0.isSelected {
-                let title = String(format: "%0.1f", zoomFactor/2)
-                $0.setAttributedTitle(attrStringForLens(title: title, isSelected: true), for: .selected)
+    /// Update the selected lens with the  zoom factor
+    /// - Parameter zoomFactor: the zoom factor to display, if `nil` use the default value
+    func updateSelectedLensTitle(withZoomFactor zoomFactor: CGFloat? = nil) {
+        for(i, button) in lensButtons.enumerated() {
+            if button.isSelected {
+                let title: String
+                if let zoomFactor {
+                    title = String(format: "%0.1f", zoomFactor/2)
+                } else {
+                    title =  lensTitles()[i]
+                }
+                button.setAttributedTitle(attrStringForLens(title: title, isSelected: true), for: .selected)
             }
         }
     }
