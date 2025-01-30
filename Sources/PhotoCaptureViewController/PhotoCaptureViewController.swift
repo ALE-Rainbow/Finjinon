@@ -376,10 +376,8 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
     ///   - isSelected: `true` if this physical camera is selected
     private func setupLensButton(_ button: UIButton, camera: PhysicalCameraAngle, title: String, isSelected: Bool = false) {
         button.isSelected = isSelected
-        let attrTitle = NSAttributedString(string: title, attributes: [ NSAttributedString.Key.foregroundColor: UIColor.white, NSAttributedString.Key.font: UIFont.systemFont(ofSize: 11, weight: .bold)])
-        button.setAttributedTitle(attrTitle, for: .normal)
-        let attrSelectedTitle = NSAttributedString(string: title, attributes: [ NSAttributedString.Key.foregroundColor: UIColor.systemYellow, NSAttributedString.Key.font: UIFont.systemFont(ofSize: 11, weight: .bold)])
-        button.setAttributedTitle(attrSelectedTitle, for: .selected)
+        button.setAttributedTitle(attrStringForLens(title: title), for: .normal)
+        button.setAttributedTitle(attrStringForLens(title: title, isSelected: true), for: .selected)
         button.setTitleColor(.white, for: .normal)
         button.setTitleColor(.systemYellow, for: .selected)
         button.translatesAutoresizingMaskIntoConstraints = false
@@ -404,6 +402,15 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
             button.configuration = config
         }
         button.updateConfiguration()*/
+    }
+    
+    func attrStringForLens(title: String, isSelected: Bool = false) -> NSAttributedString {
+        let attrTitle = isSelected ?
+            NSAttributedString(string: title, attributes: [ NSAttributedString.Key.foregroundColor: UIColor.systemYellow, NSAttributedString.Key.font: UIFont.systemFont(ofSize: 11, weight: .bold)]) :
+            NSAttributedString(string: title, attributes: [ NSAttributedString.Key.foregroundColor: UIColor.white, NSAttributedString.Key.font: UIFont.systemFont(ofSize: 11, weight: .bold)])
+
+        
+        return attrTitle
     }
     
     /// Action handler called when a camera button is tapped
@@ -829,6 +836,16 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         if selectedIndex != newIndex {
             for(i, button) in lensButtons.enumerated() {
                 button.isSelected = i == newIndex
+            }
+        }
+        updateSelectedLensTitle(withZoomFactor: zoomFactor)
+    }
+    
+    func updateSelectedLensTitle(withZoomFactor zoomFactor: CGFloat) {
+        lensButtons.forEach(){
+            if $0.isSelected {
+                let title = String(format: "%0.1f", zoomFactor/2)
+                $0.setAttributedTitle(attrStringForLens(title: title, isSelected: true), for: .selected)
             }
         }
     }
