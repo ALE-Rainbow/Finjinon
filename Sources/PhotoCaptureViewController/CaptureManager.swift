@@ -54,6 +54,7 @@ class CaptureManager: NSObject {
 
     var cameraPosition : AVCaptureDevice.Position = .back
     
+    var zoomRampSpeed : Float = 10.0
     var zoomFactors : [NSNumber] = []
     var zoomFactor : CGFloat {
         cameraDevice?.videoZoomFactor ?? 1.0
@@ -233,7 +234,7 @@ class CaptureManager: NSObject {
         lockCurrentCameraDeviceForConfiguration { device in
             if let device {
                 if animated {
-                    device.ramp(toVideoZoomFactor: zoomFactor, withRate: 10.0)
+                    device.ramp(toVideoZoomFactor: zoomFactor, withRate: self.zoomRampSpeed)
                 } else {
                     device.videoZoomFactor = zoomFactor
                 }
