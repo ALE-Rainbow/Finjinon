@@ -59,9 +59,7 @@ class CaptureManager: NSObject {
     var zoomFactor : CGFloat {
         cameraDevice?.videoZoomFactor ?? 1.0
     }
-    var maxZoomFactor : CGFloat {
-        cameraDevice?.activeFormat.videoMaxZoomFactor ?? 0.0
-    }
+    let maxZoomFactor : CGFloat = 10.0
     
     private let session = AVCaptureSession()
     private let captureQueue = DispatchQueue(label: "no.finn.finjinon-captures", attributes: [])

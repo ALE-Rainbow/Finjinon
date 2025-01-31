@@ -68,11 +68,18 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
     
     fileprivate var lensStackView = UIStackView()
     fileprivate let lensStackViewOffset: CGFloat = 16.0
+    fileprivate let lensStackViewHeight : CGFloat = 64.0
     fileprivate var wideLensButton = UIButton()
+    fileprivate var wideLensSizeConstraint : NSLayoutConstraint?
     fileprivate var standardLensButton = UIButton()
+    fileprivate var standardLensSizeConstraint : NSLayoutConstraint?
     fileprivate var teleLensButton = UIButton()
+    fileprivate var teleLensSizeConstraint : NSLayoutConstraint?
     fileprivate var lensButtons: [UIButton] = []
     fileprivate var lensButtonConfiguration : UIButton.Configuration = .borderedTinted()
+    fileprivate var lensSizeConstraints : [NSLayoutConstraint] = []
+    fileprivate let unselectedLensButtonSize : CGFloat = 40.0
+    fileprivate let selectedLensButtonSize : CGFloat = 50.0
     
     fileprivate var emptyCollectionView = UIView(frame: CGRect(x: 15, y: 15, width: 148, height: 148))
     
@@ -333,25 +340,32 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
     
     /// Determine the number of physical lens then configure the relevant switch lens buttons
     private func setupLenses() {
-        //let insetValue = 2.0
-        //lensButtonConfiguration.contentInsets = NSDirectionalEdgeInsets(top: insetValue, leading: insetValue, bottom: insetValue, trailing: insetValue)
         lensButtonConfiguration.baseBackgroundColor = .black.withAlphaComponent(0.5)
-        //lensButtonConfiguration.buttonSize = .mini
         lensButtonConfiguration.cornerStyle = .capsule
+        lensButtonConfiguration.titleLineBreakMode = .byClipping
         
-        if captureManager.zoomFactors.count > 0 {
+        wideLensSizeConstraint = wideLensButton.widthAnchor.constraint(equalToConstant: 40)
+        standardLensSizeConstraint = standardLensButton.widthAnchor.constraint(equalToConstant: 40)
+        teleLensSizeConstraint = teleLensButton.widthAnchor.constraint(equalToConstant: 40)
+
+        if captureManager.zoomFactors.count > 0,
+            let wideLensSizeConstraint,
+            let standardLensSizeConstraint,
+            let teleLensSizeConstraint {
             let titles = lensTitles()
-            
+
             if captureManager.zoomFactors.count == 1 {
-                setupLensButton(wideLensButton, camera:.ultraWide, title: titles[0])
-                setupLensButton(standardLensButton, camera: .wide, title: titles[1], isSelected: true)
+                setupLensButton(wideLensButton, camera:.ultraWide, title: titles[0], sizeConstraint: wideLensSizeConstraint)
+                setupLensButton(standardLensButton, camera: .wide, title: titles[1], sizeConstraint: standardLensSizeConstraint, isSelected: true)
                 lensButtons = [wideLensButton, standardLensButton]
+                lensSizeConstraints = [wideLensSizeConstraint, standardLensSizeConstraint]
                 
             } else if captureManager.zoomFactors.count == 2 {
-                setupLensButton(wideLensButton, camera:.ultraWide, title: titles[0])
-                setupLensButton(standardLensButton, camera: .wide, title: titles[1], isSelected: true)
-                setupLensButton(teleLensButton, camera: .telephoto, title: titles[2])
+                setupLensButton(wideLensButton, camera:.ultraWide, title: titles[0], sizeConstraint: wideLensSizeConstraint)
+                setupLensButton(standardLensButton, camera: .wide, title: titles[1], sizeConstraint: standardLensSizeConstraint, isSelected: true)
+                setupLensButton(teleLensButton, camera: .telephoto, title: titles[2], sizeConstraint: teleLensSizeConstraint)
                 lensButtons = [wideLensButton, standardLensButton, teleLensButton]
+                lensSizeConstraints = [wideLensSizeConstraint, standardLensSizeConstraint, teleLensSizeConstraint]
             }
         }
     }
@@ -362,17 +376,31 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         var titles: [String] = []
         
         if captureManager.zoomFactors.count > 0 {
-            titles.append("0.5")
+            titles.append(formatZoomFactor(0.5))
             captureManager.zoomFactors.forEach(){
-                titles.append(String(format: "%0.1f", CGFloat(truncating: $0) / 2.0))
+                titles.append(formatZoomFactor(CGFloat(truncating: $0) / 2.0))
             }
             
         // There is only one physical lens
         } else {
-            titles.append("1.0")
+            titles.append(formatZoomFactor(1.0))
         }
         
         return titles
+    }
+    
+    /// Returns a `String` to display in a lens button for a given zoom factor and selected state of the lens.
+    /// - Parameters:
+    ///   - zoomFactor: the zoom factor
+    ///   - isSelected: selected state
+    /// - Returns: the string to display
+    private func formatZoomFactor(_ zoomFactor: CGFloat, isSelected: Bool = false) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.minimumFractionDigits = 0
+        formatter.maximumFractionDigits = 1
+        let selectedSuffix: String = isSelected ? "×" : ""
+        return (formatter.string(from: NSNumber(floatLiteral: zoomFactor)) ?? "") + selectedSuffix
     }
     
     /// Setup the button dedicate to switch the virtual camera to a physical camera angle
@@ -380,41 +408,33 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
     ///   - button: the button to setup
     ///   - camera: the `PhysicalCameraAngle` of the physical camera
     ///   - title: the label (zoom multiplier)
+    ///   - sizeConstraint: the size constraint for the button to be used to update its size when selected or deselected
     ///   - isSelected: `true` if this physical camera is selected
-    private func setupLensButton(_ button: UIButton, camera: PhysicalCameraAngle, title: String, isSelected: Bool = false) {
+    private func setupLensButton(_ button: UIButton, camera: PhysicalCameraAngle, title: String, sizeConstraint: NSLayoutConstraint, isSelected: Bool = false) {
         button.isSelected = isSelected
         button.setAttributedTitle(attrStringForLens(title: title), for: .normal)
         button.setAttributedTitle(attrStringForLens(title: title, isSelected: true), for: .selected)
-        button.setTitleColor(.white, for: .normal)
-        button.setTitleColor(.systemYellow, for: .selected)
         button.translatesAutoresizingMaskIntoConstraints = false
         button.widthAnchor.constraint(equalTo: button.heightAnchor, constant: 0).isActive = true
-        //button.heightAnchor.constraint(equalToConstant: isSelected ? 32 : 24).isActive = true
         button.addTarget(self, action: #selector(handleLensButtonTapped(_:)), for: .touchUpInside)
         button.tag = camera.rawValue
         button.configuration = lensButtonConfiguration
-        /*
+        
         button.configurationUpdateHandler = { button in
-            var config = button.configuration
-            switch button.state {
-            case .selected, .highlighted:
-                config?.buttonSize = .medium
-                //let insetValue = 16.0
-                //config?.contentInsets = NSDirectionalEdgeInsets(top: insetValue, leading: insetValue, bottom: insetValue, trailing: insetValue)
-            default:
-                config?.buttonSize = .mini
-                //let insetValue = 8.0
-                //config?.contentInsets = NSDirectionalEdgeInsets(top: insetValue, leading: insetValue, bottom: insetValue, trailing: insetValue)
-            }
-            button.configuration = config
+            let buttonSize : CGFloat = button.state.contains(.selected) ? self.selectedLensButtonSize : self.unselectedLensButtonSize
+            sizeConstraint.constant = buttonSize
         }
-        button.updateConfiguration()*/
     }
     
+    /// Returns the `NSAttributedString` for the lens button title for selected or not selected state
+    /// - Parameters:
+    ///   - title: the text label
+    ///   - isSelected: `true` if selected
+    /// - Returns: The `NSAttributedString`
     func attrStringForLens(title: String, isSelected: Bool = false) -> NSAttributedString {
         let attrTitle = isSelected ?
             NSAttributedString(string: title, attributes: [ NSAttributedString.Key.foregroundColor: UIColor.systemYellow, NSAttributedString.Key.font: UIFont.systemFont(ofSize: 11, weight: .bold)]) :
-            NSAttributedString(string: title, attributes: [ NSAttributedString.Key.foregroundColor: UIColor.white, NSAttributedString.Key.font: UIFont.systemFont(ofSize: 11, weight: .bold)])
+            NSAttributedString(string: title, attributes: [ NSAttributedString.Key.foregroundColor: UIColor.white, NSAttributedString.Key.font: UIFont.systemFont(ofSize: 10, weight: .bold)])
 
         
         return attrTitle
@@ -473,23 +493,27 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
             previewView.addSubview(lensStackView)
             lensStackView.axis = .horizontal
             lensStackView.alignment = .center
-            lensStackView.distribution = .fillEqually
-            lensStackView.spacing = 10
+            lensStackView.distribution = .equalSpacing
+            lensStackView.spacing = 12
             lensStackView.backgroundColor = .black.withAlphaComponent(0.3)
-            lensStackView.layer.cornerRadius = 30
+            lensStackView.layer.cornerRadius = lensStackViewHeight / 2
             lensStackView.layer.masksToBounds = true
             lensStackView.isLayoutMarginsRelativeArrangement = true
             lensStackView.layoutMargins = UIEdgeInsets(top: 2, left: 8, bottom: 2, right: 8)
             lensStackView.translatesAutoresizingMaskIntoConstraints = false
             lensStackView.bottomAnchor.constraint(equalTo: containerView.topAnchor, constant: -lensStackViewOffset).isActive = true
             lensStackView.centerXAnchor.constraint(equalTo: previewView.centerXAnchor).isActive = true
-            lensStackView.heightAnchor.constraint(equalToConstant: 60).isActive = true
-            lensStackView.widthAnchor.constraint(equalToConstant: CGFloat((1 + captureManager.zoomFactors.count) * 60)).isActive = true
+            lensStackView.heightAnchor.constraint(equalToConstant: lensStackViewHeight).isActive = true
             
             setupLenses()
             lensButtons.forEach {
                 lensStackView.addArrangedSubview($0)
             }
+            lensSizeConstraints.forEach() {
+                $0.isActive = true
+            }
+            
+            
         }
     }
 
@@ -876,9 +900,9 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
             if button.isSelected {
                 let title: String
                 if let zoomFactor {
-                    title = String(format: "%0.1f", zoomFactor/2)
+                    title = formatZoomFactor(zoomFactor / 2.0, isSelected: true)
                 } else {
-                    title =  lensTitles()[i]
+                    title =  lensTitles()[i] + "×"
                 }
                 button.setAttributedTitle(attrStringForLens(title: title, isSelected: true), for: .selected)
             }
