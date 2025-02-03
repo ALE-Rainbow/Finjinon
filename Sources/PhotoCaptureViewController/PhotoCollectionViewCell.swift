@@ -25,6 +25,8 @@ open class PhotoCollectionViewCell: UICollectionViewCell {
         imageView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         imageView.contentMode = .scaleAspectFill
         imageView.clipsToBounds = true
+        imageView.layer.cornerRadius = 8
+        imageView.layer.masksToBounds = true
         contentView.addSubview(imageView)
 
         closeButton.addTarget(self, action: #selector(closeButtonTapped(_:)), for: .touchUpInside)

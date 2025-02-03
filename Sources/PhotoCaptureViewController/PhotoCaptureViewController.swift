@@ -44,11 +44,7 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
     open var imagePickerWaitingForImageDataView: UIView?
 
     open var enableLowLightWarning = false
-    
-    open var closeButtonTitle : String? = "Cancel"
-    
-    open var doneButtonTitle : String? = "Done"
-    
+
     fileprivate let storage = PhotoStorage()
     fileprivate let captureManager = CaptureManager()
     fileprivate var previewView = UIView()
@@ -263,11 +259,11 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         overlayButtonConfiguration.cornerStyle = .capsule
         
         let flashButtonFrame = CGRect(x: buttonMargin, y: viewFrame.origin.y + buttonMargin, width: overlayButtonSize, height: overlayButtonSize)
-        let flashImage = UIImage(systemName: "bolt.slash.circle")
+        let flashImage = UIImage(systemName: "bolt.slash")
         setupOverlayButton(flashButton, image: flashImage, frame: flashButtonFrame, action: #selector(flashButtonTapped(_:)))
         
         let switchCameraButtonFrame = CGRect(x: viewFrame.width - overlayButtonSize - buttonMargin, y: viewFrame.origin.y + buttonMargin, width: overlayButtonSize, height: overlayButtonSize)
-        let switchCameraImage = UIImage(systemName: "arrow.trianglehead.2.clockwise.rotate.90.camera")
+        let switchCameraImage = UIImage(systemName:"arrow.trianglehead.2.clockwise.rotate.90")
         setupOverlayButton(switchCameraButton, image: switchCameraImage, frame: switchCameraButtonFrame, action: #selector(switchCameraButtonTapped(_:)))
         
         // Action buttons
@@ -288,7 +284,8 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
 
         let doneButtonSize : CGFloat = 30
         doneButton.frame = CGRect(x: viewFrame.width - doneButtonSize - buttonMargin, y: doneButton.frame.midY - doneButtonSize/2, width: doneButtonSize, height: doneButtonSize)
-        doneButton.setTitle(doneButtonTitle, for: .normal)
+        doneButton.configuration = overlayButtonConfiguration
+        doneButton.setImage(UIImage(systemName: "checkmark"), for: .normal)
         doneButton.addTarget(self, action: #selector(doneButtonTapped(_:)), for: .touchUpInside)
         doneButton.tintColor = UIColor.white
         doneButton.sizeToFit()
@@ -301,8 +298,9 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
 
         let closeButtonSize : CGFloat = 30
         closeButton.frame = CGRect(x: viewFrame.origin.x + buttonMargin, y: doneButton.frame.midY - closeButtonSize/2, width: closeButtonSize, height: closeButtonSize)
+        closeButton.configuration = overlayButtonConfiguration
         closeButton.addTarget(self, action: #selector(closeButtonTapped(_:)), for: .touchUpInside)
-        closeButton.setTitle(closeButtonTitle, for: .normal)
+        closeButton.setImage(UIImage(systemName: "xmark"), for: .normal)
         closeButton.tintColor = UIColor.white
         closeButton.layer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
         closeButton.sizeToFit()
@@ -334,7 +332,7 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         emptyCollectionViewBorder.lineDashPattern = [6, 6]
         emptyCollectionViewBorder.frame = emptyCollectionView.bounds
         emptyCollectionViewBorder.fillColor = nil
-        emptyCollectionViewBorder.path = UIBezierPath(roundedRect: emptyCollectionView.bounds, cornerRadius: 24).cgPath
+        emptyCollectionViewBorder.path = UIBezierPath(roundedRect: emptyCollectionView.bounds, cornerRadius: 8).cgPath
         emptyCollectionView.layer.addSublayer(emptyCollectionViewBorder)
     }
     
@@ -657,13 +655,13 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         captureManager.changeFlashMode(mode) {
             switch mode {
             case .off:
-                icon = UIImage(systemName: "bolt.slash.circle")
+                icon = UIImage(systemName: "bolt.slash")
                 tintColor = .white
             case .on:
-                icon = UIImage(systemName: "bolt.circle.fill")
+                icon = UIImage(systemName: "bolt.fill")
                 tintColor = .systemYellow
             case .auto:
-                icon = UIImage(systemName: "bolt.circle")
+                icon = UIImage(systemName: "bolt")
                 tintColor = .white
             default:
                 icon = nil
