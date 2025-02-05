@@ -25,6 +25,10 @@ final class LowLightService {
             guard let isoSpeedRating = isoSpeedRatings[0] as? Double else {
                 throw MetatataError()
             }
+            
+            guard exposureTime > 0 else {
+                throw MetatataError()
+            }
 
             let explosureValue = log2((100 * fNumber * fNumber) / (exposureTime * isoSpeedRating))
             let lightningCondition = LightingCondition(value: explosureValue)
