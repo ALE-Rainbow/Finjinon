@@ -8,7 +8,7 @@ import Finjinon
 class ViewController: UITableViewController {
     var assets: [Asset] = []
     let captureController = PhotoCaptureViewController()
-
+    
     override func viewDidLoad() {
         super.viewDidLoad()
 
@@ -16,13 +16,16 @@ class ViewController: UITableViewController {
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "ItemCell")
 
         captureController.delegate = self
+        captureController.imagePickerAdapter = nil
 
+        /*
         for i in 0 ..< 6 {
             captureController.createAssetFromImage(UIImage(named: "hoff.jpeg")!) { asset in
                 self.assets.append(asset)
                 self.tableView.insertRows(at: [IndexPath(row: i, section: 0)], with: .automatic)
             }
         }
+        */
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -31,6 +34,7 @@ class ViewController: UITableViewController {
     }
 
     @objc func addPhotosTapped(_: AnyObject) {
+        captureController.modalPresentationStyle = .fullScreen
         present(captureController, animated: true, completion: nil)
     }
 

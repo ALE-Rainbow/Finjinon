@@ -44,11 +44,7 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
     open var imagePickerWaitingForImageDataView: UIView?
 
     open var enableLowLightWarning = false
-    
-    open var closeButtonTitle : String? = "Cancel"
-    
-    open var doneButtonTitle : String? = "Done"
-    
+
     fileprivate let storage = PhotoStorage()
     fileprivate let captureManager = CaptureManager()
     fileprivate var previewView = UIView()
@@ -62,6 +58,27 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
     fileprivate var pickerButton: UIButton?
     fileprivate var closeButton = UIButton()
     fileprivate let buttonMargin: CGFloat = 12
+    fileprivate var overlayButtonConfiguration : UIButton.Configuration = .plain()
+    fileprivate var overlayButtonSize : CGFloat = 40.0
+    fileprivate let buttonAlignOffset : CGFloat = 4.0
+    
+    fileprivate var lensStackView = UIStackView()
+    fileprivate let lensStackViewOffset: CGFloat = 16.0
+    fileprivate let lensStackViewHeight : CGFloat = 64.0
+    fileprivate var wideLensButton = UIButton()
+    fileprivate var wideLensSizeConstraint : NSLayoutConstraint?
+    fileprivate var standardLensButton = UIButton()
+    fileprivate var standardLensSizeConstraint : NSLayoutConstraint?
+    fileprivate var teleLensButton = UIButton()
+    fileprivate var teleLensSizeConstraint : NSLayoutConstraint?
+    fileprivate var lensButtons: [UIButton] = []
+    fileprivate var lensButtonConfiguration : UIButton.Configuration = .borderedTinted()
+    fileprivate var lensSizeConstraints : [NSLayoutConstraint] = []
+    fileprivate let unselectedLensButtonSize : CGFloat = 40.0
+    fileprivate let selectedLensButtonSize : CGFloat = 50.0
+    
+    fileprivate var emptyCollectionView = UIView(frame: CGRect(x: 15, y: 15, width: 148, height: 148))
+    
     fileprivate var orientation: UIDeviceOrientation = .portrait
 
     private lazy var lowLightView: LowLightView = {
@@ -75,9 +92,9 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
     private var viewBounds = CGRect.zero
     private var subviewSetupDone = false
     
-    private let buttonAlignOffset : CGFloat = 4
-    private let flashButtonWidth : CGFloat = 30
-    private let flashButtonHeight : CGFloat = 30
+    private var zoomBegin: CGFloat = 1.0
+    private var zoomTouchPoint : CGPoint = .zero
+    private var panZoomSpeed: CGFloat = 5.0
 
     deinit {
         captureManager.stop(nil)
@@ -118,14 +135,10 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         // viewDidAppear) for iPhone X in particular. Setting positions constrained to Safe Area would allow for more
         // flexibility with Auto Layout, and thus creating the subViews in viewDidLoad/viewWillAppear would be possible again.
 
-        if #available(iOS 11.0, *) {
-            view.insetsLayoutMarginsFromSafeArea = true
-            viewFrame = view.convert(view.safeAreaLayoutGuide.layoutFrame, to: view.superview ?? view)
-            viewBounds = view.safeAreaLayoutGuide.layoutFrame
-        } else {
-            viewFrame = view.frame
-            viewBounds = view.bounds
-        }
+        view.insetsLayoutMarginsFromSafeArea = true
+        viewFrame = view.convert(view.safeAreaLayoutGuide.layoutFrame, to: view.superview ?? view)
+        viewBounds = view.safeAreaLayoutGuide.layoutFrame
+
         setupSubviews()
 
         collectionView.reloadData()
@@ -145,6 +158,7 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         captureManager.stop(nil)
     }
     
+
     func setupSubviews() {
         // Subviews need to be added and framed during viewDidAppear for the iPhone X's safeAreas to be known.
         if subviewSetupDone { return }
@@ -164,7 +178,7 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         previewView.layer.addSublayer(previewLayer)
 
         focusIndicatorView.backgroundColor = UIColor.clear
-        focusIndicatorView.layer.borderColor = UIColor.orange.cgColor
+        focusIndicatorView.layer.borderColor = UIColor.systemYellow.cgColor
         focusIndicatorView.layer.borderWidth = 1.0
         focusIndicatorView.alpha = 0.0
         previewView.addSubview(focusIndicatorView)
@@ -172,8 +186,14 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         let tapper = UITapGestureRecognizer(target: self, action: #selector(focusTapGestureRecognized(_:)))
         previewView.addGestureRecognizer(tapper)
 
+        let zoomGesture = UIPanGestureRecognizer(target: self, action: #selector(zoomGestureRecognized(_:)))
+        previewView.addGestureRecognizer(zoomGesture)
+        
+        let pinchZoomGesture = UIPinchGestureRecognizer(target: self, action: #selector(pinchZoomGestureRecognized(_:)))
+        previewView.addGestureRecognizer(pinchZoomGesture)
+        
         var collectionViewHeight: CGFloat = min(viewFrame.size.height / 6, 120)
-        let window = UIApplication.shared.keyWindow
+        let window = UIApplication.keyWindow
         let collectionViewBottomMargin: CGFloat = 70 + (window?.safeAreaInsets.bottom ?? 0)
         let cameraButtonHeight: CGFloat = 66
 
@@ -205,12 +225,12 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
             }
         }
 
-        collectionView.backgroundColor = UIColor.clear
+        collectionView.backgroundColor = UIColor(white: 0.1, alpha: 1.0)
         collectionView.alwaysBounceHorizontal = true
         containerView.addSubview(collectionView)
         
         collectionView.translatesAutoresizingMaskIntoConstraints = false
-        collectionView.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 0).isActive = true
+        collectionView.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 4).isActive = true
         collectionView.leftAnchor.constraint(equalTo: containerView.leftAnchor, constant: 0).isActive = true
         collectionView.rightAnchor.constraint(equalTo: containerView.rightAnchor, constant: 0).isActive = true
         collectionView.heightAnchor.constraint(equalToConstant: collectionViewHeight).isActive = true
@@ -221,10 +241,33 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         containerView.rightAnchor.constraint(equalTo: view.rightAnchor, constant: 0).isActive = true
         containerView.heightAnchor.constraint(equalToConstant: collectionViewBottomMargin + collectionViewHeight).isActive = true
 
-        collectionView.register(PhotoCollectionViewCell.self, forCellWithReuseIdentifier: "PhotoCell")
+        collectionView.register(PhotoCollectionViewCell.self, forCellWithReuseIdentifier: PhotoCollectionViewCell.cellIdentifier())
         collectionView.dataSource = self
         collectionView.delegate = self
-
+        
+        let emptyCollectionViewMargin: CGFloat = 16
+        let emptyCollectionViewWidth = collectionViewHeight - 2 * emptyCollectionViewMargin
+        emptyCollectionView.frame = CGRect(x: emptyCollectionViewMargin, y: emptyCollectionViewMargin, width: emptyCollectionViewWidth, height: emptyCollectionViewWidth)
+        
+        setupEmptyCollectionView()
+        collectionView.addSubview(emptyCollectionView)
+        
+        // Overlay buttons
+        
+        overlayButtonConfiguration.buttonSize = .large
+        overlayButtonConfiguration.background.backgroundColor = .black.withAlphaComponent(0.3)
+        overlayButtonConfiguration.cornerStyle = .capsule
+        
+        let flashButtonFrame = CGRect(x: buttonMargin, y: viewFrame.origin.y + buttonMargin, width: overlayButtonSize, height: overlayButtonSize)
+        let flashImage = UIImage(systemName: "bolt.slash")
+        setupOverlayButton(flashButton, image: flashImage, frame: flashButtonFrame, action: #selector(flashButtonTapped(_:)))
+        
+        let switchCameraButtonFrame = CGRect(x: viewFrame.width - overlayButtonSize - buttonMargin, y: viewFrame.origin.y + buttonMargin, width: overlayButtonSize, height: overlayButtonSize)
+        let switchCameraImage = UIImage(systemName:"arrow.trianglehead.2.clockwise.rotate.90")
+        setupOverlayButton(switchCameraButton, image: switchCameraImage, frame: switchCameraButtonFrame, action: #selector(switchCameraButtonTapped(_:)))
+        
+        // Action buttons
+        
         captureButton.frame = CGRect(x: (containerView.frame.width / 2) - cameraButtonHeight / 2, y: containerView.frame.height - cameraButtonHeight - 12, width: cameraButtonHeight, height: cameraButtonHeight)
         captureButton.layer.cornerRadius = cameraButtonHeight / 2
         captureButton.addTarget(self, action: #selector(capturePhotoTapped(_:)), for: .touchUpInside)
@@ -239,16 +282,10 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         captureButton.isEnabled = false
         captureButton.accessibilityLabel = "finjinon.captureButton".localized()
 
-        flashButton.frame = CGRect(x: buttonMargin, y: viewFrame.origin.y + buttonMargin, width: flashButtonWidth, height: flashButtonHeight)
-        let icon = UIImage(named: "flashAutoIcon", in: Bundle(for: PhotoCaptureViewController.self), compatibleWith: nil)
-        flashButton.setImage(icon, for: .normal)
-        flashButton.addTarget(self, action: #selector(flashButtonTapped(_:)), for: .touchUpInside)
-        flashButton.tintColor = UIColor.white
-        flashButton.layer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
-        
         let doneButtonSize : CGFloat = 30
         doneButton.frame = CGRect(x: viewFrame.width - doneButtonSize - buttonMargin, y: doneButton.frame.midY - doneButtonSize/2, width: doneButtonSize, height: doneButtonSize)
-        doneButton.setTitle(doneButtonTitle, for: .normal)
+        doneButton.configuration = overlayButtonConfiguration
+        doneButton.setImage(UIImage(systemName: "checkmark"), for: .normal)
         doneButton.addTarget(self, action: #selector(doneButtonTapped(_:)), for: .touchUpInside)
         doneButton.tintColor = UIColor.white
         doneButton.sizeToFit()
@@ -259,21 +296,11 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         doneButton.centerYAnchor.constraint(equalTo: self.captureButton.centerYAnchor).isActive = true
         doneButton.isHidden = true
 
-        let switchCameraButtonSize : CGFloat = 30
-        switchCameraButton.frame = CGRect(x: viewFrame.width - switchCameraButtonSize - buttonMargin, y: viewFrame.origin.y + buttonMargin, width: switchCameraButtonSize, height: switchCameraButtonSize)
-        let switchCameraIcon = UIImage(named: "SwitchCameraIcon", in: Bundle(for: PhotoCaptureViewController.self), compatibleWith: nil)
-        switchCameraButton.setImage(switchCameraIcon, for: .normal)
-        switchCameraButton.setTitle("", for: .normal)
-        switchCameraButton.addTarget(self, action: #selector(switchCameraButtonTapped(_:)), for: .touchUpInside)
-        switchCameraButton.titleLabel?.font = UIFont.preferredFont(forTextStyle: .footnote)
-        switchCameraButton.tintColor = UIColor.white
-        switchCameraButton.layer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
-        
-        
         let closeButtonSize : CGFloat = 30
         closeButton.frame = CGRect(x: viewFrame.origin.x + buttonMargin, y: doneButton.frame.midY - closeButtonSize/2, width: closeButtonSize, height: closeButtonSize)
+        closeButton.configuration = overlayButtonConfiguration
         closeButton.addTarget(self, action: #selector(closeButtonTapped(_:)), for: .touchUpInside)
-        closeButton.setTitle(closeButtonTitle, for: .normal)
+        closeButton.setImage(UIImage(systemName: "xmark"), for: .normal)
         closeButton.tintColor = UIColor.white
         closeButton.layer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
         closeButton.sizeToFit()
@@ -282,7 +309,6 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         closeButton.leftAnchor.constraint(equalTo: self.view.leftAnchor, constant: buttonMargin).isActive = true
         closeButton.centerYAnchor.constraint(equalTo: self.captureButton.centerYAnchor).isActive = true
       
-
         if enableLowLightWarning {
             view.addSubview(lowLightView)
             NSLayoutConstraint.activate([
@@ -294,13 +320,154 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
 
         updateImagePickerButton()
 
+        setupCaptureManager()
+    }
+    
+    /// Setup the view that is displayed when there is no taken photo in the collection view
+    private func setupEmptyCollectionView() {
+        let emptyCollectionViewBorder = CAShapeLayer()
+        emptyCollectionViewBorder.strokeColor = UIColor.white.cgColor
+        emptyCollectionViewBorder.lineWidth = 1.5
+        emptyCollectionViewBorder.lineJoin = CAShapeLayerLineJoin.round
+        emptyCollectionViewBorder.lineDashPattern = [6, 6]
+        emptyCollectionViewBorder.frame = emptyCollectionView.bounds
+        emptyCollectionViewBorder.fillColor = nil
+        emptyCollectionViewBorder.path = UIBezierPath(roundedRect: emptyCollectionView.bounds, cornerRadius: 8).cgPath
+        emptyCollectionView.layer.addSublayer(emptyCollectionViewBorder)
+    }
+    
+    /// Determine the number of physical lens then configure the relevant switch lens buttons
+    private func setupLenses() {
+        lensButtonConfiguration.baseBackgroundColor = .black.withAlphaComponent(0.5)
+        lensButtonConfiguration.cornerStyle = .capsule
+        lensButtonConfiguration.titleLineBreakMode = .byClipping
+        
+        wideLensSizeConstraint = wideLensButton.widthAnchor.constraint(equalToConstant: 40)
+        standardLensSizeConstraint = standardLensButton.widthAnchor.constraint(equalToConstant: 40)
+        teleLensSizeConstraint = teleLensButton.widthAnchor.constraint(equalToConstant: 40)
+
+        if captureManager.zoomFactors.count > 0,
+            let wideLensSizeConstraint,
+            let standardLensSizeConstraint,
+            let teleLensSizeConstraint {
+            let titles = lensTitles()
+
+            if captureManager.zoomFactors.count == 1 {
+                setupLensButton(wideLensButton, camera:.ultraWide, title: titles[0], sizeConstraint: wideLensSizeConstraint)
+                setupLensButton(standardLensButton, camera: .wide, title: titles[1], sizeConstraint: standardLensSizeConstraint, isSelected: true)
+                lensButtons = [wideLensButton, standardLensButton]
+                lensSizeConstraints = [wideLensSizeConstraint, standardLensSizeConstraint]
+                
+            } else if captureManager.zoomFactors.count == 2 {
+                setupLensButton(wideLensButton, camera:.ultraWide, title: titles[0], sizeConstraint: wideLensSizeConstraint)
+                setupLensButton(standardLensButton, camera: .wide, title: titles[1], sizeConstraint: standardLensSizeConstraint, isSelected: true)
+                setupLensButton(teleLensButton, camera: .telephoto, title: titles[2], sizeConstraint: teleLensSizeConstraint)
+                lensButtons = [wideLensButton, standardLensButton, teleLensButton]
+                lensSizeConstraints = [wideLensSizeConstraint, standardLensSizeConstraint, teleLensSizeConstraint]
+            }
+        }
+    }
+    
+    /// Returns the titles of the physical lenses
+    /// - Returns: the titles array ordered from wide to tele angle
+    private func lensTitles() -> [String] {
+        var titles: [String] = []
+        
+        if captureManager.zoomFactors.count > 0 {
+            titles.append(formatZoomFactor(0.5))
+            captureManager.zoomFactors.forEach(){
+                titles.append(formatZoomFactor(CGFloat(truncating: $0) / 2.0))
+            }
+            
+        // There is only one physical lens
+        } else {
+            titles.append(formatZoomFactor(1.0))
+        }
+        
+        return titles
+    }
+    
+    /// Returns a `String` to display in a lens button for a given zoom factor and selected state of the lens.
+    /// - Parameters:
+    ///   - zoomFactor: the zoom factor
+    ///   - isSelected: selected state
+    /// - Returns: the string to display
+    private func formatZoomFactor(_ zoomFactor: CGFloat, isSelected: Bool = false) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.minimumFractionDigits = 0
+        formatter.maximumFractionDigits = 1
+        let selectedSuffix: String = isSelected ? "×" : ""
+        return (formatter.string(from: NSNumber(floatLiteral: zoomFactor)) ?? "") + selectedSuffix
+    }
+    
+    /// Setup the button dedicate to switch the virtual camera to a physical camera angle
+    /// - Parameters:
+    ///   - button: the button to setup
+    ///   - camera: the `PhysicalCameraAngle` of the physical camera
+    ///   - title: the label (zoom multiplier)
+    ///   - sizeConstraint: the size constraint for the button to be used to update its size when selected or deselected
+    ///   - isSelected: `true` if this physical camera is selected
+    private func setupLensButton(_ button: UIButton, camera: PhysicalCameraAngle, title: String, sizeConstraint: NSLayoutConstraint, isSelected: Bool = false) {
+        button.isSelected = isSelected
+        button.setAttributedTitle(attrStringForLens(title: title), for: .normal)
+        button.setAttributedTitle(attrStringForLens(title: title, isSelected: true), for: .selected)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.widthAnchor.constraint(equalTo: button.heightAnchor, constant: 0).isActive = true
+        button.addTarget(self, action: #selector(handleLensButtonTapped(_:)), for: .touchUpInside)
+        button.tag = camera.rawValue
+        button.configuration = lensButtonConfiguration
+        
+        button.configurationUpdateHandler = { button in
+            let buttonSize : CGFloat = button.state.contains(.selected) ? self.selectedLensButtonSize : self.unselectedLensButtonSize
+            sizeConstraint.constant = buttonSize
+        }
+    }
+    
+    /// Returns the `NSAttributedString` for the lens button title for selected or not selected state
+    /// - Parameters:
+    ///   - title: the text label
+    ///   - isSelected: `true` if selected
+    /// - Returns: The `NSAttributedString`
+    func attrStringForLens(title: String, isSelected: Bool = false) -> NSAttributedString {
+        let attrTitle = isSelected ?
+            NSAttributedString(string: title, attributes: [ NSAttributedString.Key.foregroundColor: UIColor.systemYellow, NSAttributedString.Key.font: UIFont.systemFont(ofSize: 11, weight: .bold)]) :
+            NSAttributedString(string: title, attributes: [ NSAttributedString.Key.foregroundColor: UIColor.white, NSAttributedString.Key.font: UIFont.systemFont(ofSize: 10, weight: .bold)])
+
+        
+        return attrTitle
+    }
+    
+    /// Setup an overlay button such as the flash or front/back camera switches
+    /// - Parameters:
+    ///   - button: the button
+    ///   - image: the button's image
+    ///   - frame: the button's frame
+    ///   - action: the action handler when the button is touched
+    private func setupOverlayButton(_ button: UIButton, image: UIImage?, frame: CGRect, action: Selector) {
+        button.frame = frame
+        button.setImage(image, for: .normal)
+        button.configuration = overlayButtonConfiguration
+        button.addTarget(self, action: action, for: .touchUpInside)
+        button.tintColor = UIColor.white
+        button.layer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+    }
+    
+    /// - Returns: The index of the selected lens button
+    private func selectedLensIndex() -> Int? {
+        return lensButtons.firstIndex(where: {$0.isSelected })
+    }
+    
+    private func setupCaptureManager() {
         previewView.alpha = 0.0
         captureManager.prepare { error in
             if let error = error {
                 self.delegate?.photoCaptureViewController(self, didFailWithError: error)
                 return
             }
-
+            
+            self.setupCameraSelector()
+            
             if self.captureManager.hasFlash {
                 self.view.addSubview(self.flashButton)
             }
@@ -317,6 +484,36 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
 
         captureManager.delegate = self
     }
+    
+    /// Setup the camera button container
+    private func setupCameraSelector() {
+        if captureManager.zoomFactors.count > 0 {
+            previewView.addSubview(lensStackView)
+            lensStackView.axis = .horizontal
+            lensStackView.alignment = .center
+            lensStackView.distribution = .equalSpacing
+            lensStackView.spacing = 12
+            lensStackView.backgroundColor = .black.withAlphaComponent(0.3)
+            lensStackView.layer.cornerRadius = lensStackViewHeight / 2
+            lensStackView.layer.masksToBounds = true
+            lensStackView.isLayoutMarginsRelativeArrangement = true
+            lensStackView.layoutMargins = UIEdgeInsets(top: 2, left: 8, bottom: 2, right: 8)
+            lensStackView.translatesAutoresizingMaskIntoConstraints = false
+            lensStackView.bottomAnchor.constraint(equalTo: containerView.topAnchor, constant: -lensStackViewOffset).isActive = true
+            lensStackView.centerXAnchor.constraint(equalTo: previewView.centerXAnchor).isActive = true
+            lensStackView.heightAnchor.constraint(equalToConstant: lensStackViewHeight).isActive = true
+            
+            setupLenses()
+            lensButtons.forEach {
+                lensStackView.addArrangedSubview($0)
+            }
+            lensSizeConstraints.forEach() {
+                $0.isActive = true
+            }
+            
+            
+        }
+    }
 
     private func updateImagePickerButton() {
         if imagePickerAdapter == nil {
@@ -325,21 +522,23 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
                 pickerButton = nil
             }
         } else {
-            let pickerButtonWidth: CGFloat = 114
+            let pickerButtonWidth: CGFloat = 120
             let pickerButtonHeight : CGFloat = 38
-            let buttonRect = CGRect(x: viewFrame.origin.x + buttonMargin, y: captureButton.frame.midY - pickerButtonHeight/2, width: pickerButtonWidth, height: pickerButtonHeight)
+            let buttonRect = CGRect(x: (containerView.frame.width - pickerButtonWidth)/2, y: lensStackViewOffset, width: pickerButtonWidth, height: pickerButtonHeight)
 
             if pickerButton == nil {
                 pickerButton = UIButton(frame: buttonRect)
-                pickerButton!.setTitle("finjinon.photos".localized(), for: .normal)
-                let icon = UIImage(named: "PhotosIcon", in: Bundle(for: PhotoCaptureViewController.self), compatibleWith: nil)
-                pickerButton!.setImage(icon, for: .normal)
-                pickerButton!.addTarget(self, action: #selector(presentImagePickerTapped(_:)), for: .touchUpInside)
-                pickerButton!.titleLabel?.font = UIFont.preferredFont(forTextStyle: .footnote)
-                pickerButton!.autoresizingMask = [.flexibleTopMargin]
-                pickerButton!.layer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
-                roundifyButton(pickerButton!)
-                containerView.addSubview(pickerButton!)
+                if let pickerButton {
+                    pickerButton.setTitle("finjinon.photos".localized(), for: .normal)
+                    let icon = UIImage(named: "PhotosIcon", in: Bundle(for: PhotoCaptureViewController.self), compatibleWith: nil)
+                    pickerButton.setImage(icon, for: .normal)
+                    pickerButton.addTarget(self, action: #selector(presentImagePickerTapped(_:)), for: .touchUpInside)
+                    pickerButton.titleLabel?.font = UIFont.preferredFont(forTextStyle: .footnote)
+                    pickerButton.autoresizingMask = [.flexibleTopMargin]
+                    pickerButton.layer.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+                    roundifyButton(pickerButton)
+                    previewView.addSubview(pickerButton)
+                }
             } else {
                 pickerButton!.frame = buttonRect
             }
@@ -452,19 +651,26 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
     @objc func flashButtonTapped(_: UIButton) {
         let mode = captureManager.nextAvailableFlashMode() ?? .off
         var icon : UIImage?
+        var tintColor : UIColor?
         captureManager.changeFlashMode(mode) {
             switch mode {
             case .off:
-                icon = UIImage(named: "flashOffIcon", in: Bundle(for: PhotoCaptureViewController.self), compatibleWith: nil)
+                icon = UIImage(systemName: "bolt.slash")
+                tintColor = .white
             case .on:
-                icon = UIImage(named: "flashOnIcon", in: Bundle(for: PhotoCaptureViewController.self), compatibleWith: nil)
+                icon = UIImage(systemName: "bolt.fill")
+                tintColor = .systemYellow
             case .auto:
-                icon = UIImage(named: "flashAutoIcon", in: Bundle(for: PhotoCaptureViewController.self), compatibleWith: nil)
+                icon = UIImage(systemName: "bolt")
+                tintColor = .white
             default:
                 icon = nil
             }
-            if let icon = icon {
+            if let icon {
                 self.flashButton.setImage(icon, for: .normal)
+            }
+            if let tintColor {
+                self.flashButton.tintColor = tintColor
             }
         }
     }
@@ -476,12 +682,16 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
                 return
             }
             
+            self.lensStackView.isHidden =  self.captureManager.cameraPosition == .front ? true : false
+            if !self.lensStackView.isHidden {
+                self.updateSelectedLensButton()
+            }
+            
             if self.captureManager.hasFlash {
                 if self.flashButton.isDescendant(of: self.view) == false {
                     self.view.addSubview(self.flashButton)
                 }
-            }
-            else  {
+            } else  {
                 self.flashButton.removeFromSuperview()
             }
         }
@@ -559,6 +769,15 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         captureManager.captureImage()
     }
 
+    /// Action handler called when a camera button is tapped
+    /// - Parameter button: the camera button
+    @objc func handleLensButtonTapped(_ button: UIButton) {
+        lensButtons.forEach{ $0.isSelected = $0 == button ? true : false }
+        let cameraAngle = PhysicalCameraAngle(rawValue: button.tag) ?? .wide
+        captureManager.switchToPhysicalCamera(angle: cameraAngle, animated: true)
+        updateSelectedLensTitle()
+    }
+    
     fileprivate func didAddAsset(_ asset: Asset) {
         DispatchQueue.main.async {
             self.collectionView.performBatchUpdates({
@@ -611,6 +830,82 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
             captureManager.lockFocusAtPointOfInterest(point)
         }
     }
+    
+    @objc func zoomGestureRecognized(_ gestureRecognizer: UIPanGestureRecognizer) {
+        switch gestureRecognizer.state {
+        case .began:
+            zoomBegin = captureManager.zoomFactor
+            zoomTouchPoint = gestureRecognizer.location(in: view)
+            
+        case .changed:
+            // horizontal distance from the initial touch point multiplied by the zoom speed
+            let deltaX = (gestureRecognizer.location(in: view).x - zoomTouchPoint.x) * panZoomSpeed
+            var zoomTo : CGFloat = zoomBegin + (deltaX / view.frame.width)
+            // step 0.01 between 1.0 and zoomMax
+            let msc = Int((zoomTo+0.001)*100) % 100
+            zoomTo = trunc(zoomTo) + CGFloat(msc) * 0.01
+            zoomTo = max(1, min(zoomTo, captureManager.maxZoomFactor))
+            if captureManager.zoomFactor != zoomTo {
+                captureManager.setZoomFactor(zoomTo)
+                updateSelectedLensButton(forZoomFactor: zoomTo)
+            }
+            
+        default:
+            break
+        }
+    }
+    
+    @objc func pinchZoomGestureRecognized(_ gestureRecognizer: UIPinchGestureRecognizer) {
+        switch gestureRecognizer.state {
+        case .began:
+            zoomBegin = captureManager.zoomFactor
+
+        case .changed:
+            var zoomTo : CGFloat = zoomBegin + (gestureRecognizer.scale * 2 - 2)
+            // step 0.01 between 1.0 and zoomMax
+            let msc = Int((zoomTo+0.001)*100) % 100
+            zoomTo = trunc(zoomTo) + CGFloat(msc) * 0.01
+            zoomTo = max(1, min(zoomTo, captureManager.maxZoomFactor))
+            if captureManager.zoomFactor != zoomTo {
+                captureManager.setZoomFactor(zoomTo)
+                updateSelectedLensButton(forZoomFactor: zoomTo)
+            }
+            
+        default:
+            break
+        }
+    }
+    
+    /// Select the lens button matching the given zoomFactor
+    /// - Parameter zoomFactor: the current zoom factor
+    private func updateSelectedLensButton(forZoomFactor zoomFactor: CGFloat = 2.0) {
+        // If no lens is selected (-1) the following code will set one
+        let selectedIndex = selectedLensIndex() ?? -1
+        // Search the hardware lens index matching the current zoomFactor
+        let newIndex = 1 + (captureManager.zoomFactors.lastIndex(where: { (10 * zoomFactor).rounded(.up) / 10 >= CGFloat(truncating: $0) }) ?? -1)
+        if selectedIndex != newIndex {
+            for(i, button) in lensButtons.enumerated() {
+                button.isSelected = i == newIndex
+            }
+        }
+        updateSelectedLensTitle(withZoomFactor: zoomFactor)
+    }
+    
+    /// Update the selected lens with the  zoom factor
+    /// - Parameter zoomFactor: the zoom factor to display, if `nil` use the default value
+    func updateSelectedLensTitle(withZoomFactor zoomFactor: CGFloat? = nil) {
+        for(i, button) in lensButtons.enumerated() {
+            if button.isSelected {
+                let title: String
+                if let zoomFactor {
+                    title = formatZoomFactor(zoomFactor / 2.0, isSelected: true)
+                } else {
+                    title =  lensTitles()[i] + "×"
+                }
+                button.setAttributedTitle(attrStringForLens(title: title, isSelected: true), for: .selected)
+            }
+        }
+    }
 
     // MARK: - PhotoCollectionViewLayoutDelegate
 
@@ -634,7 +929,7 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         }
         
         let statusBarOrientation : UIInterfaceOrientation?
-        if let windowScene = UIApplication.shared.windows.first?.windowScene {
+        if let windowScene = UIApplication.mainScene {
             statusBarOrientation = windowScene.interfaceOrientation
         } else {
             statusBarOrientation = nil
@@ -661,14 +956,11 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
     fileprivate func roundifyButton(_ button: UIButton, inset: CGFloat = 16) {
         button.tintColor = UIColor.white
 
-        button.backgroundColor = UIColor.black.withAlphaComponent(0.3)
-        button.layer.borderColor = button.tintColor!.cgColor
-        button.layer.borderWidth = 1.0
-        button.layer.cornerRadius = button.bounds.height / 2
-
-        var insets = button.imageEdgeInsets
-        insets.left -= inset
-        button.imageEdgeInsets = insets
+        var buttonConfiguration = UIButton.Configuration.bordered()
+        buttonConfiguration.background.backgroundColor = .black.withAlphaComponent(0.3)
+        buttonConfiguration.cornerStyle = .capsule
+        buttonConfiguration.imagePadding = inset
+        button.configuration = buttonConfiguration
     }
 
     fileprivate func updateWidgetsToOrientation() {
@@ -676,10 +968,10 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
             return
         }
         var pickerPosition: CGPoint = pickerButton?.frame.origin ?? .zero
-        if orientation == .landscapeLeft || orientation == .landscapeRight {
-            pickerPosition = pickerButton != nil ? CGPoint(x: viewFrame.origin.x + viewBounds.width - (pickerButton!.bounds.size.width / 2 - buttonMargin), y: viewFrame.origin.y + buttonMargin) : .zero
-        } else if orientation == .portrait || orientation == .portraitUpsideDown {
-            pickerPosition = pickerButton != nil ? CGPoint(x: viewFrame.origin.x + viewBounds.width - (pickerButton!.bounds.size.width + buttonMargin), y: viewFrame.origin.y + buttonMargin) : .zero
+        if orientation == .landscapeLeft || orientation == .landscapeRight, let pickerButton {
+            pickerPosition = CGPoint(x: (containerView.frame.width - pickerButton.bounds.size.width)/2, y: lensStackViewOffset)
+        } else if orientation == .portrait || orientation == .portraitUpsideDown, let pickerButton {
+            pickerPosition = CGPoint(x: (containerView.frame.height - pickerButton.bounds.size.width)/2, y: lensStackViewOffset)
         }
         let animations = {
             self.pickerButton?.rotateToCurrentDeviceOrientation()
@@ -688,6 +980,9 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
             self.closeButton.rotateToCurrentDeviceOrientation()
             self.switchCameraButton.rotateToCurrentDeviceOrientation()
             self.doneButton.rotateToCurrentDeviceOrientation()
+            for button in self.lensButtons {
+                button.rotateToCurrentDeviceOrientation()
+            }
             for cell in self.collectionView.visibleCells {
                 cell.contentView.rotateToCurrentDeviceOrientation()
             }
@@ -697,8 +992,16 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
 }
 
 extension PhotoCaptureViewController: UICollectionViewDataSource, PhotoCollectionViewCellDelegate {
-    public func collectionView(_: UICollectionView, numberOfItemsInSection _: Int) -> Int {
-        return delegate?.photoCaptureViewControllerNumberOfAssets(self) ?? 0
+    public func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection _: Int) -> Int {
+        if let count = delegate?.photoCaptureViewControllerNumberOfAssets(self), count > 0 {
+            emptyCollectionView.isHidden = true
+            collectionView.isScrollEnabled = true
+            return count
+        } else {
+            emptyCollectionView.isHidden = false
+            collectionView.isScrollEnabled = false
+            return 0
+        }
     }
 
     public func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
@@ -713,6 +1016,7 @@ extension PhotoCaptureViewController: UICollectionViewDataSource, PhotoCollectio
             cell.contentView.rotateToDeviceOrientation(orientation)
         }
         cell.delegate = self
+        
         return cell
     }
 
@@ -763,7 +1067,7 @@ extension PhotoCaptureViewController: CaptureManagerDelegate {
     }
     
     func captureManager(_ manager: CaptureManager, didFailWithError error: NSError) {
-        print("Failure: \(error)")
+        OTC.log("Failure: \(error)")
     }
 }
 
