@@ -263,7 +263,7 @@ open class PhotoCaptureViewController: UIViewController, PhotoCollectionViewLayo
         setupOverlayButton(flashButton, image: flashImage, frame: flashButtonFrame, action: #selector(flashButtonTapped(_:)))
         
         let switchCameraButtonFrame = CGRect(x: viewFrame.width - overlayButtonSize - buttonMargin, y: viewFrame.origin.y + buttonMargin, width: overlayButtonSize, height: overlayButtonSize)
-        let switchCameraImage = UIImage(systemName:"arrow.trianglehead.2.clockwise.rotate.90")
+        let switchCameraImage = UIImage(systemName: "arrow.triangle.2.circlepath")
         setupOverlayButton(switchCameraButton, image: switchCameraImage, frame: switchCameraButtonFrame, action: #selector(switchCameraButtonTapped(_:)))
         
         // Action buttons
