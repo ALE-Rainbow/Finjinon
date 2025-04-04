@@ -340,13 +340,17 @@ private extension CaptureManager {
                 self.delegate?.captureManager(self, didFailWithError: error1)
             }
 
-            if self.session.canAddOutput(self.cameraOutput) {
-                self.session.addOutput(self.cameraOutput)
-            }
-
-            let videoOutput = self.makeVideoDataOutput()
-            if self.session.canAddOutput(videoOutput) {
-                self.session.addOutput(videoOutput)
+            if self.session.isRunning {
+                OTC.log("Session is already running, skipping adding outputs again (or it freezes)")
+            } else {
+                if self.session.canAddOutput(self.cameraOutput) {
+                    self.session.addOutput(self.cameraOutput)
+                }
+    
+                let videoOutput = self.makeVideoDataOutput()
+                if self.session.canAddOutput(videoOutput) {
+                    self.session.addOutput(videoOutput)
+                }
             }
 
             if let cameraDevice = self.cameraDevice {
@@ -365,7 +369,9 @@ private extension CaptureManager {
                 }
             }
 
-            self.session.startRunning()
+            if !self.session.isRunning {
+                self.session.startRunning()
+            }
 
             DispatchQueue.main.async {
                 completion(error)
